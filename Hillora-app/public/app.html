@@ -1,0 +1,2153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Hillora — Atlas</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Inter', sans-serif; background: #F4F7EE; color: #16261F; font-size: 20px; }
+  .display { font-family: 'Fraunces', serif; }
+  a { text-decoration: none; color: inherit; }
+
+  header { display: flex; align-items: center; justify-content: space-between; padding: 16px 32px; background: #fff; border-bottom: 1px solid #e6ebe0; }
+  .brand { display: flex; align-items: center; gap: 12px; }
+  .brand .mark { width: 50px; height: 50px; border-radius: 50%; background: #eef3e6; display: flex; align-items: center; justify-content: center; font-size: 24px; }
+  .brand h1 { font-size: 1.75rem; color: #1B4D3E; }
+  .brand p { font-size: 0.85rem; color: #7c8a7e; }
+  nav { display: flex; gap: 28px; }
+  nav a { font-size: 1.05rem; color: #3d4f42; font-weight: 500; cursor: pointer; }
+  .header-right { display: flex; align-items: center; gap: 16px; }
+  .search-box { display: flex; align-items: center; gap: 8px; background: #f4f7ee; border-radius: 20px; padding: 10px 18px; font-size: 0.98rem; color: #8a978c; width: 230px; }
+  .bell { position: relative; font-size: 1.3rem; cursor: pointer; }
+  .bell .dot { position: absolute; top: -4px; right: -6px; background: #C1666B; color: #fff; font-size: 0.68rem; border-radius: 50%; width: 17px; height: 17px; display: flex; align-items: center; justify-content: center; }
+  .bell-wrap, .search-wrap { position: relative; }
+  .search-box input { border: none; background: transparent; outline: none; font-size: 0.98rem; color: #16261F; width: 100%; font-family: 'Inter', sans-serif; }
+  .search-results { display: none; position: absolute; top: 46px; left: 0; width: 280px; background: #fff; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.12); z-index: 50; max-height: 300px; overflow-y: auto; }
+  .search-result-item { padding: 12px 16px; cursor: pointer; font-size: 0.95rem; border-bottom: 1px solid #eef1ea; }
+  .search-result-item:last-child { border-bottom: none; }
+  .search-result-item:hover { background: #f4f7ee; }
+  .notif-panel { display: none; position: absolute; top: 40px; right: 0; width: 300px; background: #fff; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.12); padding: 8px; z-index: 50; }
+  .notif-item { padding: 12px; border-radius: 8px; font-size: 0.92rem; color: #4a5a4d; line-height: 1.5; }
+  .notif-item:hover { background: #f4f7ee; }
+  .notif-item + .notif-item { border-top: 1px solid #eef1ea; }
+  .notif-item b { color: #1B4D3E; }
+  .login-btn { background: #1B4D3E; color: #fff; padding: 11px 22px; border-radius: 24px; font-size: 1rem; font-weight: 600; cursor: pointer; border: none; }
+
+  .body-wrap { display: flex; }
+  .sidebar { width: 220px; background: #fff; padding: 22px 16px; display: flex; flex-direction: column; min-height: calc(100vh - 79px); border-right: 1px solid #e6ebe0; }
+  .sidebar .item { display: flex; align-items: center; gap: 10px; padding: 12px 14px; border-radius: 8px; font-size: 1.05rem; color: #4a5a4d; cursor: pointer; margin-bottom: 3px; font-weight: 500; }
+  .sidebar .item.active { background: #eef3e6; color: #1B4D3E; font-weight: 700; border-left: 3px solid #3E7C4A; }
+  .sidebar .item:hover { background: #f7f9f3; }
+  .quote { margin-top: auto; font-style: italic; color: #6b7a6d; font-size: 0.95rem; padding: 18px 10px; line-height: 1.6; }
+
+  .atlas-main { flex: 1; padding: 28px 28px 0; display: flex; gap: 22px; }
+  .hero-col { flex: 1.7; }
+  .detail-col { flex: 1; }
+
+  .hero-box { position: relative; border-radius: 20px; overflow: hidden; min-height: 680px; background: linear-gradient(180deg, #cfe0e8 0%, #d7e6c8 35%, #a9c98a 65%, #7fae66 100%); padding: 36px; }
+  .eyebrow { color: #C9942F; font-size: 0.92rem; letter-spacing: 0.12em; font-weight: 700; margin-bottom: 14px; }
+  .hero-box h2 { font-size: 2.5rem; color: #16321F; line-height: 1.1; }
+  .hero-box h2 em { color: #3E7C4A; font-style: italic; }
+  .hero-box p.desc { max-width: 400px; color: #33422f; font-size: 1.05rem; line-height: 1.65; margin: 16px 0 20px; }
+  .explore-btn { background: #1B4D3E; color: #fff; border: none; padding: 13px 24px; border-radius: 24px; font-weight: 600; font-size: 1rem; cursor: pointer; }
+
+  .india-map { position: relative; margin-top: 20px; height: 560px; }
+  .map-zoom-controls { position: absolute; top: 14px; right: 14px; display: flex; flex-direction: column; gap: 6px; z-index: 5; }
+  .map-zoom-btn { width: 38px; height: 38px; border-radius: 8px; background: #fff; border: 1px solid #dfe3de; font-size: 1.3rem; font-weight: 700; cursor: pointer; color: #1B4D3E; box-shadow: 0 2px 8px rgba(0,0,0,0.12); line-height: 1; }
+  .map-zoom-btn:hover { background: #f4f7ee; }
+  .india-map svg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+  .state-path { fill: #ffffff; fill-opacity: 0.4; stroke: #1B4D3E; stroke-width: 1; }
+  .state-path:hover { fill-opacity: 0.65; }
+  .pin-dot { cursor: pointer; stroke: #fff; stroke-width: 1.5; }
+  .pin-dot:hover { r: 7; }
+
+  .stat-bar { background: rgba(255,255,255,0.92); border-radius: 16px; padding: 20px 28px; margin-top: 20px; display: flex; justify-content: space-between; }
+  .stat-bar .stat { display: flex; align-items: center; gap: 10px; }
+  .stat-bar .num { font-family: 'Fraunces', serif; font-size: 1.5rem; color: #1B4D3E; }
+  .stat-bar .lbl { font-size: 0.88rem; color: #6b7a6d; }
+  .footer-line { text-align: center; margin-top: 16px; font-style: italic; color: #33422f; font-size: 1rem; padding-bottom: 20px; }
+
+  .detail-panel { background: #fff; border-radius: 20px; padding: 24px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); }
+  .detail-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+  .back-btn { width: 36px; height: 36px; border-radius: 50%; border: 1px solid #e2e8de; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 1.1rem; }
+  .station-title { display: flex; align-items: center; gap: 10px; margin: 12px 0 6px; flex-wrap: wrap; }
+  .station-title h1 { font-family: 'Fraunces', serif; font-size: 1.95rem; color: #16321F; }
+  .state-pill { background: #eef3e6; color: #1B4D3E; font-size: 0.9rem; padding: 5px 14px; border-radius: 14px; font-weight: 600; }
+  .coords { font-size: 1rem; color: #7c8a7e; margin-bottom: 16px; }
+  .station-photo { height: 160px; border-radius: 14px; margin-bottom: 6px; background: linear-gradient(120deg, #8fae6f, #6a9750); background-size: cover; background-position: center; }
+  .photo360-wrap { position: relative; height: 200px; border-radius: 14px; overflow: hidden; margin-bottom: 6px; background: linear-gradient(120deg, #8fae6f, #6a9750); cursor: grab; user-select: none; }
+  .photo360-wrap:active { cursor: grabbing; }
+  .photo-mode-row { display: flex; gap: 8px; margin-bottom: 8px; }
+  .photo-mode-btn { border: 1px solid #dfe3de; background: #fff; color: #6b7a6d; padding: 7px 14px; border-radius: 20px; font-size: 0.88rem; font-weight: 600; cursor: pointer; }
+  .photo-mode-btn.active { background: #1B4D3E; color: #fff; border-color: #1B4D3E; }
+  .street-view-wrap { border-radius: 14px; overflow: hidden; margin-bottom: 6px; background: #eef3e6; }
+  .photo360-img { width: 100%; height: 100%; object-fit: cover; display: block; pointer-events: none; }
+  .photo360-hint { position: absolute; bottom: 8px; right: 10px; background: rgba(0,0,0,0.55); color: #fff; font-size: 0.78rem; padding: 5px 12px; border-radius: 12px; }
+  .photo-caption { font-size: 0.88rem; color: #6b8f77; margin-bottom: 14px; }
+  .photo-caption a { text-decoration: underline; font-weight: 600; }
+
+  .stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 18px; }
+  .stat-grid .card { border-radius: 12px; padding: 14px; }
+  .stat-grid .card .n { font-family: 'Fraunces', serif; font-size: 1.5rem; }
+  .stat-grid .card .l { font-size: 0.85rem; color: #6b7a6d; margin-top: 3px; }
+  .c-green { background: #eef3e6; }
+  .c-orange { background: #fdf1e0; color: #b5730e; }
+  .c-purple { background: #f1eaf8; color: #6b3fa0; }
+
+  .tab-row { display: flex; gap: 18px; border-bottom: 1px solid #e6ebe0; margin-bottom: 18px; font-size: 1rem; flex-wrap: wrap; }
+  .tab-row span { padding-bottom: 10px; color: #8a978c; cursor: pointer; }
+  .tab-row span.active { color: #1B4D3E; font-weight: 700; border-bottom: 2px solid #3E7C4A; }
+  #stDetails { font-size: 1.05rem; color: #4a5a4d; line-height: 1.9; }
+  #stDetails b { color: #1B4D3E; }
+
+  .species-photo-box { width: 100%; border-radius: 12px; margin: 6px 0 4px; overflow: hidden; background: #f4f7ee; }
+  .species-photo-box img { width: 100%; max-height: 260px; object-fit: cover; display: block; }
+
+  .bio-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin: 10px 0 6px; }
+  .bio-item { text-align: center; }
+  .bio-item .bio-label { font-size: 0.88rem; font-weight: 700; color: #1B4D3E; margin-bottom: 6px; }
+  .bio-item .bio-photo-box { width: 100%; height: 120px; border-radius: 10px; overflow: hidden; background: #eef3e6; display: flex; align-items: center; justify-content: center; }
+  .bio-item .bio-photo-box img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .bio-item .bio-caption { font-size: 0.75rem; color: #6b8f77; margin-top: 5px; line-height: 1.4; }
+  .bio-item .bio-caption a { text-decoration: underline; font-weight: 600; }
+  @media (max-width: 700px) { .bio-grid { grid-template-columns: 1fr; } }
+
+  .gauge-wrap { display: flex; align-items: center; gap: 24px; flex-wrap: wrap; margin: 10px 0; }
+  .dict-title { font-family: 'Fraunces', serif; font-size: 1.3rem; color: #16321F; margin-bottom: 8px; }
+  .dict-link { display: inline-block; margin-top: 12px; color: #3E7C4A; font-weight: 700; text-decoration: underline; font-size: 1.02rem; }
+  .dict-source { font-size: 0.85rem; color: #7c8a7e; margin-top: 10px; }
+
+  /* ===== Report / detail pages (opened from sidebar) ===== */
+  .report-view { flex: 1; padding: 28px; display: none; }
+  .report-card { background: #fff; border-radius: 20px; padding: 30px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); max-width: 1000px; margin: 0 auto; }
+  .report-topbar { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 14px; margin-bottom: 20px; }
+  .back-to-atlas-btn { background: #1B4D3E; color: #fff; border: none; padding: 11px 20px; border-radius: 24px; font-weight: 600; font-size: 0.98rem; cursor: pointer; }
+  .report-select { padding: 10px 14px; border-radius: 8px; border: 1px solid #dfe3de; font-size: 1rem; font-family: 'Inter', sans-serif; }
+  .report-header h1 { font-family: 'Fraunces', serif; font-size: 2rem; color: #16321F; margin-bottom: 20px; }
+  .report-lead { font-size: 1.05rem; color: #4a5a4d; line-height: 1.7; margin-bottom: 18px; }
+  .report-subhead { font-family: 'Fraunces', serif; font-size: 1.3rem; color: #1B4D3E; margin: 26px 0 10px; }
+  .report-tag { font-size: 0.8rem; color: #b5730e; font-weight: 500; margin-left: 8px; }
+  .report-chart-box { margin: 10px 0 20px; background: #f9fbf6; border-radius: 12px; padding: 14px; }
+  .report-note { font-size: 0.92rem; color: #7c8a7e; margin-top: 10px; line-height: 1.6; }
+  .report-gauge-note { font-size: 0.98rem; color: #4a5a4d; max-width: 320px; line-height: 1.6; }
+
+  .field-table { border: 1px solid #eef1ea; border-radius: 12px; overflow: hidden; margin: 10px 0; }
+  .field-row { display: flex; justify-content: space-between; gap: 20px; padding: 12px 16px; font-size: 1rem; border-bottom: 1px solid #eef1ea; }
+  .field-row:last-child { border-bottom: none; }
+  .field-row:nth-child(odd) { background: #f9fbf6; }
+  .field-label { color: #6b7a6d; font-weight: 600; }
+  .field-value { color: #16261F; text-align: right; font-weight: 500; }
+
+  .fav-item { display: flex; justify-content: space-between; align-items: center; padding: 14px 16px; border-bottom: 1px solid #eef1ea; font-size: 1.02rem; }
+  .fav-item:last-child { border-bottom: none; }
+  .fav-item .fav-name { cursor: pointer; font-weight: 600; color: #1B4D3E; }
+  .fav-item .fav-remove { cursor: pointer; color: #C1666B; font-size: 0.9rem; }
+
+  .poi-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 10px 0 6px; }
+  .poi-card { text-align: center; }
+  .poi-card .poi-photo { width: 100%; height: 95px; border-radius: 10px; overflow: hidden; background: #eef3e6; display: flex; align-items: center; justify-content: center; font-size: 1.8rem; }
+  .poi-card .poi-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .poi-card .poi-name { font-size: 0.82rem; font-weight: 700; color: #1B4D3E; margin-top: 6px; line-height: 1.3; }
+  .poi-card .poi-meta { font-size: 0.75rem; color: #7c8a7e; margin-top: 2px; }
+  .poi-card .poi-360-link { display: inline-block; margin-top: 4px; font-size: 0.72rem; color: #3E7C4A; font-weight: 600; text-decoration: underline; }
+  @media (max-width: 700px) { .poi-grid { grid-template-columns: 1fr 1fr; } }
+
+  .transport-anim-box { position: relative; height: 90px; border-radius: 14px; overflow: hidden; margin: 14px 0 22px; background: #eef3e6; }
+  .transport-anim-box.mode-flight { background: linear-gradient(180deg, #cfe0e8, #eaf3f7); }
+  .transport-track { position: absolute; left: 0; right: 0; bottom: 22px; height: 4px; background: repeating-linear-gradient(90deg, #a9b8a0 0 24px, transparent 24px 48px); }
+  .mode-train .transport-track { background: repeating-linear-gradient(90deg, #8a8f7c 0 6px, transparent 6px 20px); height: 6px; }
+  .mode-flight .transport-track { display: none; }
+  .transport-vehicle { position: absolute; bottom: 16px; font-size: 2.3rem; left: -60px; animation: transportMove 5s linear infinite; }
+  .mode-flight .transport-vehicle { bottom: auto; top: 30px; animation: transportFly 6s linear infinite; }
+  .transport-cloud { position: absolute; font-size: 1.5rem; opacity: 0.75; left: 110%; animation: cloudDrift 10s linear infinite; }
+  @keyframes transportMove { 0% { left: -60px; } 100% { left: 100%; } }
+  @keyframes transportFly { 0% { left: -60px; top: 34px; } 50% { top: 18px; } 100% { left: 100%; top: 34px; } }
+  @keyframes cloudDrift { 0% { left: 110%; } 100% { left: -20%; } }
+
+  /* ===== Colorful buttons ===== */
+  nav a { padding: 9px 16px; border-radius: 20px; font-weight: 600; }
+  nav a:nth-child(1) { background: #eef3e6; color: #1B4D3E; }
+  nav a:nth-child(2) { background: #fdf1e0; color: #b5730e; }
+  nav a:nth-child(3) { background: #f1eaf8; color: #6b3fa0; }
+  nav a:nth-child(4) { background: #e6f2f0; color: #1a7a6b; }
+  nav a:nth-child(5) { background: #fdeaea; color: #b5453f; }
+  nav a:nth-child(6) { background: #eaf1fd; color: #2f5fa8; }
+
+  .sidebar .item { border-left: 4px solid transparent; font-weight: 700; }
+  .sidebar .item.active { border-left: 4px solid #16321F; }
+  .item-atlas { background: #eef3e6; color: #1B4D3E; }
+  .item-fav { background: #fdeaea; color: #b5453f; }
+  .item-guide { background: #fff3d6; color: #a3670a; }
+  .item-calendar { background: #e6f2f0; color: #1a7a6b; }
+  .item-bio { background: #eafaea; color: #2e7d32; }
+  .item-comm { background: #f1eaf8; color: #6b3fa0; }
+  .item-tourism { background: #eaf1fd; color: #2f5fa8; }
+  .item-heritage { background: #fbeee0; color: #a3540a; }
+  .item-threats { background: #fdeaea; color: #c1392b; }
+  .item-preserve { background: #e8f6ef; color: #1a8a5f; }
+  .item-insights { background: #eef3fb; color: #35538f; }
+  .item-reports { background: #f7eef8; color: #7a3f8f; }
+  .item-about { background: #f2f2f2; color: #555; }
+  .item-specialty { background: #fff3d6; color: #a3670a; }
+  .item-tea { background: #eafaea; color: #1a7a3e; }
+  .item-coffee { background: #f2e6da; color: #5c3a1e; }
+  .item-chocolate { background: #f0e2d8; color: #6b3a1f; }
+
+  .tab-row span { padding: 9px 16px; border-radius: 20px; font-weight: 700; border-bottom: none !important; background: #f2f4ee; }
+  .tab-row span.active { color: #fff !important; }
+  .tab-row span:nth-child(1) { background: #eef3e6; color: #1B4D3E; }
+  .tab-row span:nth-child(1).active { background: #1B4D3E; }
+  .tab-row span:nth-child(2) { background: #f1eaf8; color: #6b3fa0; }
+  .tab-row span:nth-child(2).active { background: #6b3fa0; }
+  .tab-row span:nth-child(3) { background: #eafaea; color: #2e7d32; }
+  .tab-row span:nth-child(3).active { background: #2e7d32; }
+  .tab-row span:nth-child(4) { background: #eaf1fd; color: #2f5fa8; }
+  .tab-row span:nth-child(4).active { background: #2f5fa8; }
+  .tab-row span:nth-child(5) { background: #fdeaea; color: #c1392b; }
+  .tab-row span:nth-child(5).active { background: #c1392b; }
+  .tab-row span:nth-child(6) { background: #e8f6ef; color: #1a8a5f; }
+  .tab-row span:nth-child(6).active { background: #1a8a5f; }
+  .tab-row span:nth-child(7) { background: #fdf1e0; color: #b5730e; }
+  .tab-row span:nth-child(7).active { background: #b5730e; }
+  .tab-row span:nth-child(8) { background: #f7eef8; color: #7a3f8f; }
+  .tab-row span:nth-child(8).active { background: #7a3f8f; }
+  .tab-row span:nth-child(9) { background: #e6f2f0; color: #1a7a6b; }
+  .tab-row span:nth-child(9).active { background: #1a7a6b; }
+
+  /* ===== Guide ===== */
+  .guide-choice-row { display: flex; gap: 10px; flex-wrap: wrap; margin: 10px 0 18px; }
+  .guide-choice-btn { padding: 12px 20px; border-radius: 22px; border: 2px solid #dfe3de; background: #fff; font-weight: 700; cursor: pointer; font-size: 0.98rem; color: #4a5a4d; }
+  .guide-choice-btn.selected { background: #1B4D3E; color: #fff; border-color: #1B4D3E; }
+  .guide-field { margin-bottom: 16px; }
+  .guide-field label { display: block; font-weight: 700; color: #1B4D3E; margin-bottom: 6px; }
+  .guide-field input { padding: 10px 14px; border-radius: 8px; border: 1px solid #dfe3de; font-size: 1rem; width: 120px; }
+  .guide-generate-btn { background: #E8A33D; color: #16211C; border: none; padding: 13px 26px; border-radius: 24px; font-weight: 700; font-size: 1rem; cursor: pointer; margin-top: 6px; }
+  .guide-day-card { background: #f9fbf6; border-radius: 14px; padding: 16px 18px; margin-bottom: 14px; }
+  .guide-day-card h4 { font-family: 'Fraunces', serif; color: #1B4D3E; font-size: 1.15rem; margin-bottom: 8px; }
+  .guide-audio-row { display: flex; gap: 10px; margin: 16px 0; flex-wrap: wrap; }
+  .guide-audio-btn { background: #6b3fa0; color: #fff; border: none; padding: 11px 20px; border-radius: 22px; font-weight: 700; cursor: pointer; }
+
+  /* ===== Calendar ===== */
+  .cal-date-input { padding: 12px 16px; border-radius: 10px; border: 1px solid #dfe3de; font-size: 1.05rem; margin-bottom: 18px; }
+  .cal-note-card { border-radius: 12px; padding: 14px 18px; margin-bottom: 10px; font-size: 0.98rem; line-height: 1.6; }
+  .cal-note-hindu { background: #fff3d6; color: #7a4e00; }
+  .cal-note-christian { background: #eaf1fd; color: #2f5fa8; }
+  .cal-note-muslim { background: #e8f6ef; color: #1a7a6b; }
+  .cal-plan-card { border-radius: 14px; padding: 18px 20px; margin: 14px 0 18px; }
+  .cal-plan-weekend { background: linear-gradient(135deg,#fdf1e0,#fdeef0); }
+  .cal-plan-weekday { background: linear-gradient(135deg,#eef3e6,#e6f2f0); }
+  .cal-plan-badge { display: inline-block; padding: 5px 14px; border-radius: 14px; font-size: 0.85rem; font-weight: 700; margin-bottom: 10px; }
+  .cal-plan-weekend .cal-plan-badge { background: #E8A33D; color: #16211C; }
+  .cal-plan-weekday .cal-plan-badge { background: #3E7C4A; color: #fff; }
+  .cal-plan-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 10px; margin-top: 10px; }
+  @media (max-width: 700px) { .cal-plan-grid { grid-template-columns: 1fr; } }
+  .cal-plan-item { background: rgba(255,255,255,0.6); border-radius: 10px; padding: 10px 14px; }
+  .cal-plan-item .l { font-size: 0.78rem; font-weight: 700; color: #6b7a6d; text-transform: uppercase; letter-spacing: 0.04em; }
+  .cal-plan-item .v { font-size: 0.98rem; color: #16261F; margin-top: 3px; }
+
+  /* ===== Specialty / gifts / produce (colorful, with images) ===== */
+  .specialty-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px,1fr)); gap: 14px; margin: 10px 0 6px; }
+  .specialty-card { background: #fff; border-radius: 14px; overflow: hidden; box-shadow: 0 3px 12px rgba(0,0,0,0.07); text-align: center; padding-bottom: 10px; }
+  .specialty-card .sc-photo { width: 100%; height: 110px; background: #eef3e6; display: flex; align-items: center; justify-content: center; font-size: 1.8rem; }
+  .specialty-card .sc-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .specialty-card .sc-name { font-weight: 700; color: #1B4D3E; font-size: 0.92rem; margin-top: 8px; padding: 0 8px; }
+  .specialty-card .sc-note { font-size: 0.8rem; color: #6b7a6d; margin-top: 4px; padding: 0 10px; line-height: 1.4; }
+
+  .gift-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px,1fr)); gap: 12px; margin: 10px 0 6px; }
+  .gift-card { border-radius: 14px; overflow: hidden; text-align: center; padding-bottom: 8px; }
+  .gift-card .gc-photo { width: 100%; height: 90px; background: rgba(255,255,255,0.5); display: flex; align-items: center; justify-content: center; font-size: 1.6rem; }
+  .gift-card .gc-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .gift-card .gc-name { font-size: 0.82rem; font-weight: 700; margin-top: 6px; padding: 0 6px; color: #16261F; }
+  .gift-card:nth-child(6n+1) { background: #eef3e6; }
+  .gift-card:nth-child(6n+2) { background: #fdf1e0; }
+  .gift-card:nth-child(6n+3) { background: #f1eaf8; }
+  .gift-card:nth-child(6n+4) { background: #e6f2f0; }
+  .gift-card:nth-child(6n+5) { background: #fdeaea; }
+  .gift-card:nth-child(6n+6) { background: #eaf1fd; }
+
+  .produce-chip-row { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0 4px; }
+  .produce-chip { padding: 8px 14px; border-radius: 16px; font-size: 0.88rem; font-weight: 600; }
+  .produce-chip:nth-child(5n+1) { background: #eef3e6; color: #1B4D3E; }
+  .produce-chip:nth-child(5n+2) { background: #fdf1e0; color: #b5730e; }
+  .produce-chip:nth-child(5n+3) { background: #f1eaf8; color: #6b3fa0; }
+  .produce-chip:nth-child(5n+4) { background: #e6f2f0; color: #1a7a6b; }
+  .produce-chip:nth-child(5n+5) { background: #fdeaea; color: #b5453f; }
+
+  /* ===== Animated (moving) process flow ===== */
+  .process-track-wrap { position: relative; height: 60px; margin: 10px 0 4px; }
+  .process-track-line { position: absolute; top: 50%; left: 0; right: 0; height: 4px; transform: translateY(-50%); border-radius: 2px; background: repeating-linear-gradient(90deg, #c9d4c1 0 14px, transparent 14px 28px); }
+  .process-mover { position: absolute; top: 50%; transform: translateY(-50%); font-size: 2rem; left: -40px; animation: processMove 7s linear infinite; }
+  @keyframes processMove { 0% { left: -40px; } 100% { left: 100%; } }
+  .process-steps-row { display: flex; overflow-x: auto; gap: 14px; padding-bottom: 10px; }
+  .process-step-card { flex: 0 0 150px; background: #fff; border-radius: 10px; padding: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); animation: stepPulse 7s ease-in-out infinite; }
+  .process-step-card .psc-num { font-family: 'Fraunces', serif; font-size: 1.1rem; color: #3E7C4A; margin-bottom: 6px; }
+  .process-step-card .psc-text { font-size: 0.85rem; color: #4a5a4d; line-height: 1.4; }
+  @keyframes stepPulse { 0%, 100% { box-shadow: 0 2px 8px rgba(0,0,0,0.06); transform: scale(1); } 50% { box-shadow: 0 0 0 3px rgba(62,124,74,0.28), 0 4px 14px rgba(0,0,0,0.12); transform: scale(1.045); } }
+
+  .altitude-band-row { display: flex; flex-wrap: wrap; gap: 10px; margin: 10px 0 18px; }
+  .altitude-band { flex: 1 1 140px; border-radius: 12px; padding: 12px 14px; }
+  .altitude-band .ab-range { font-family: 'Fraunces', serif; font-size: 1.1rem; }
+  .altitude-band .ab-label { font-size: 0.8rem; opacity: 0.85; margin-top: 2px; }
+  .video-btn { display: inline-flex; align-items: center; gap: 8px; background: #C1392B; color: #fff; border: none; padding: 11px 20px; border-radius: 22px; font-weight: 700; cursor: pointer; font-size: 0.95rem; margin-top: 6px; }
+
+  .brew-card { background: #fff; border-radius: 16px; padding: 20px; margin-bottom: 20px; box-shadow: 0 3px 14px rgba(0,0,0,0.06); }
+  .brew-card-top { display: flex; gap: 16px; flex-wrap: wrap; }
+  .brew-photo { width: 220px; height: 150px; border-radius: 12px; overflow: hidden; background: #eef3e6; flex-shrink: 0; }
+  .brew-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .brew-info { flex: 1; min-width: 220px; }
+  .brew-info h4 { font-family: 'Fraunces', serif; font-size: 1.25rem; color: #1B4D3E; margin-bottom: 6px; }
+  .brew-badge { display: inline-block; font-size: 0.8rem; font-weight: 700; padding: 4px 12px; border-radius: 12px; margin-bottom: 8px; }
+</style>
+</head>
+<body>
+
+  <header>
+    <div class="brand"><div class="mark">⛰️</div><div><h1 class="display">HILLORA</h1><p>Heritage · Nature · People</p></div></div>
+    <nav>
+      <a onclick="showAtlas()">Home</a>
+      <a onclick="showAtlas()">Explore</a>
+      <a onclick="openReport('insights', document.getElementById('sb-insights'))">Insights</a>
+      <a onclick="openReport('preservation', document.getElementById('sb-preservation'))">Preservation</a>
+      <a onclick="openReport('reports', document.getElementById('sb-reports'))">Reports</a>
+      <a onclick="openReport('about', document.getElementById('sb-about'))">About</a>
+    </nav>
+    <div class="header-right">
+      <div class="search-wrap" id="searchWrap">
+        <div class="search-box">🔍 <input type="text" id="searchInput" placeholder="Search a hill station..." oninput="handleSearchInput()"></div>
+        <div class="search-results" id="searchResults"></div>
+      </div>
+      <div class="bell-wrap" id="bellWrap">
+        <div class="bell" onclick="toggleNotifications()">🔔<span class="dot">3</span></div>
+        <div class="notif-panel" id="notifPanel"></div>
+      </div>
+      <button class="login-btn" onclick="window.location.href='/login.html'">👤 Login / Sign Up</button>
+    </div>
+  </header>
+
+  <div class="body-wrap">
+    <div class="sidebar">
+      <div class="item active item-atlas" id="sb-atlas" onclick="showAtlas()">📖 Atlas</div>
+      <div class="item item-fav" id="sb-favorites" onclick="openReport('favorites', this)">❤️ Favorites</div>
+      <div class="item item-guide" id="sb-guide" onclick="openReport('guide', this)">🧭 Trip Guide</div>
+      <div class="item item-calendar" id="sb-calendar" onclick="openReport('calendar', this)">📅 Calendar</div>
+      <div class="item item-bio" id="sb-biodiversity" onclick="openReport('biodiversity', this)">🌿 Biodiversity</div>
+      <div class="item item-comm" id="sb-communities" onclick="openReport('communities', this)">👥 Communities</div>
+      <div class="item item-tourism" id="sb-tourism" onclick="openReport('tourism', this)">📷 Tourism</div>
+      <div class="item item-heritage" onclick="window.location.href='/architecture.html'">🏛️ Heritage / Architecture</div>
+      <div class="item item-threats" id="sb-threats" onclick="openReport('threats', this)">⚠️ Threats</div>
+      <div class="item item-preserve" id="sb-preservation" onclick="openReport('preservation', this)">🛡️ Preservation</div>
+      <div class="item item-specialty" id="sb-specialty" onclick="openReport('specialty', this)">🎁 Local Specialty</div>
+      <div class="item item-tea" id="sb-tea" onclick="openReport('tea', this)">🍵 Tea Guide</div>
+      <div class="item item-coffee" id="sb-coffee" onclick="openReport('coffee', this)">☕ Coffee Guide</div>
+      <div class="item item-chocolate" id="sb-chocolate" onclick="openReport('chocolate', this)">🍫 Chocolate Guide</div>
+      <div class="item item-insights" id="sb-insights" onclick="openReport('insights', this)">📊 Insights</div>
+      <div class="item item-reports" id="sb-reports" onclick="openReport('reports', this)">📄 Reports</div>
+      <div class="item item-about" id="sb-about" onclick="openReport('about', this)">ℹ️ About Us</div>
+      <div class="quote">"Mountains are not just landforms, they are lifelines."</div>
+    </div>
+
+    <div class="atlas-main" id="atlasMain">
+      <div class="hero-col">
+        <div class="hero-box">
+          <div class="eyebrow">EXPLORE. UNDERSTAND. PRESERVE.</div>
+          <h2 class="display">India's Hills.<br><em>Our Living Heritage.</em></h2>
+          <p class="desc">Hillora brings together data, stories and communities to protect and preserve the living systems of our hill regions.</p>
+          <button class="explore-btn">Explore the Atlas →</button>
+
+          <div class="india-map" id="indiaMap">
+            <div class="map-zoom-controls">
+              <button class="map-zoom-btn" onclick="mapZoomIn()">+</button>
+              <button class="map-zoom-btn" onclick="mapZoomOut()">−</button>
+              <button class="map-zoom-btn" onclick="mapZoomReset()" style="font-size:0.85rem;">⤾</button>
+            </div>
+          </div>
+
+          <div class="stat-bar">
+            <div class="stat"><span>⛰️</span><div><div class="num">457+</div><div class="lbl">Hill Stations</div></div></div>
+            <div class="stat"><span>🌿</span><div><div class="num">2,000+</div><div class="lbl">Species Documented</div></div></div>
+            <div class="stat"><span>👥</span><div><div class="num">300+</div><div class="lbl">Communities</div></div></div>
+            <div class="stat"><span>🛡️</span><div><div class="num">120+</div><div class="lbl">Conservation Areas</div></div></div>
+          </div>
+          <div class="footer-line">Let's explore today, preserve forever.</div>
+        </div>
+      </div>
+
+      <div class="detail-col">
+        <div class="detail-panel">
+          <div class="detail-top">
+            <div class="back-btn">←</div>
+            <div style="display:flex;gap:10px;font-size:1.3rem;"><span id="favHeart" onclick="toggleFavorite()" style="cursor:pointer;">♡</span></div>
+          </div>
+          <div class="station-title">
+            <h1 id="stName">Select a station</h1>
+            <span class="state-pill" id="stState">—</span>
+          </div>
+          <div class="coords" id="stCoords">📍 —</div>
+          <div class="photo-mode-row">
+            <button class="photo-mode-btn active" id="btnPhotoMode" onclick="showPhotoMode()">📷 Photos</button>
+            <button class="photo-mode-btn" id="btnStreetMode" onclick="showStreetViewMode()">🌐 360° Street View</button>
+          </div>
+          <div class="photo360-wrap" id="photo360Wrap">
+            <img class="photo360-img" id="photo360Img" draggable="false">
+            <div class="photo360-hint" id="photo360Hint">Loading photos…</div>
+          </div>
+          <div class="street-view-wrap" id="streetViewWrap" style="display:none;">
+            <iframe id="streetViewFrame" width="100%" height="200" style="border:0;display:block;" loading="lazy" allowfullscreen></iframe>
+          </div>
+          <div class="photo-caption" id="stationPhotoCaption"></div>
+
+          <div class="stat-grid">
+            <div class="card c-green"><div class="n" id="statVisitors">—</div><div class="l">Visitors (2025)</div></div>
+            <div class="card c-green"><div class="n" id="statSpecies">—</div><div class="l">Species Documented</div></div>
+            <div class="card c-green"><div class="n" id="statAttractions">—</div><div class="l">Tourist Attractions</div></div>
+            <div class="card c-orange"><div class="n" id="statThreat">—</div><div class="l">Threat Level</div></div>
+            <div class="card c-purple"><div class="n" id="statPreserve">—</div><div class="l">Preservation Effectiveness</div></div>
+          </div>
+
+          <div class="tab-row" id="tabRow">
+            <span class="active" onclick="selectTab('overview', this)">Overview</span>
+            <span onclick="selectTab('community', this)">Community</span>
+            <span onclick="selectTab('biodiversity', this)">Biodiversity</span>
+            <span onclick="selectTab('tourism', this)">Tourism</span>
+            <span onclick="selectTab('threats', this)">Threats</span>
+            <span onclick="selectTab('preservation', this)">Preservation</span>
+            <span onclick="selectTab('dictionary', this)">Dictionary</span>
+            <span onclick="selectTab('nearby', this)">Nearby Places</span>
+            <span onclick="selectTab('transport', this)">Transport</span>
+          </div>
+
+          <div id="stDetails">Click a pin on the map to load real details here.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Full-page report view, shown instead of the map when a sidebar item is clicked -->
+    <div class="report-view" id="reportView">
+      <div class="report-card">
+        <div class="report-topbar">
+          <button class="back-to-atlas-btn" onclick="showAtlas()">← Back to Atlas</button>
+          <div style="display:flex;gap:10px;align-items:center;">
+            <select class="report-select" id="reportStationSelect" onchange="onReportStationChange()"></select>
+            <button class="back-to-atlas-btn" style="background:#E8A33D;color:#16211C;" onclick="downloadReportPDF()">⬇ Download PDF</button>
+          </div>
+        </div>
+        <div id="reportPDFArea">
+          <div class="report-header"><h1 id="reportTitle">—</h1></div>
+          <div id="reportBody">Loading...</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script>
+let allStations = [], allTourism = [], allBiodiversity = [], allCommunity = [], allDamage = [], allPreservation = [];
+let currentId = null;
+let currentReportSection = null;
+let currentReportStationId = null;
+
+async function loadData() {
+  const [a,b,c,d,e,f] = await Promise.all([
+    fetch('/api/stations'), fetch('/api/tourism'), fetch('/api/biodiversity'),
+    fetch('/api/community'), fetch('/api/damage'), fetch('/api/preservation')
+  ]);
+  allStations = await a.json(); allTourism = await b.json(); allBiodiversity = await c.json();
+  allCommunity = await d.json(); allDamage = await e.json(); allPreservation = await f.json();
+  drawMap();
+}
+
+let mapSvg = null;
+let mapZoomBehavior = null;
+
+function drawMap() {
+  const width = 500, height = 480;
+  const svg = d3.select('#indiaMap').append('svg').attr('viewBox', `0 0 ${width} ${height}`);
+  const zoomLayer = svg.append('g');
+  const gStates = zoomLayer.append('g');
+  const gPins = zoomLayer.append('g');
+
+  mapSvg = svg;
+  mapZoomBehavior = d3.zoom()
+    .scaleExtent([1, 8])
+    .translateExtent([[0, 0], [width, height]])
+    .on('zoom', (event) => { zoomLayer.attr('transform', event.transform); });
+  svg.call(mapZoomBehavior);
+
+  d3.json('https://cdn.jsdelivr.net/gh/india-in-data/india-states-2019@master/india_states.geojson')
+    .then(geo => {
+      const projection = d3.geoMercator().fitSize([width, height], geo);
+      const path = d3.geoPath().projection(projection);
+      gStates.selectAll('path').data(geo.features).join('path').attr('class', 'state-path').attr('d', path);
+      placePins(gPins, projection);
+    })
+    .catch(() => {
+      gStates.append('path').attr('class', 'state-path')
+        .attr('d', 'M220,10 L280,20 L310,60 L340,80 L360,110 L365,150 L390,180 L370,220 L340,260 L310,310 L290,370 L260,420 L230,460 L210,470 L195,430 L180,380 L160,340 L140,300 L110,270 L95,230 L100,190 L80,150 L95,110 L130,70 L170,40 Z');
+      const projection = d3.geoMercator().center([82, 22]).scale(600).translate([width/2, height/2]);
+      placePins(gPins, projection);
+    });
+}
+
+function mapZoomIn() {
+  if (mapSvg && mapZoomBehavior) mapSvg.transition().duration(300).call(mapZoomBehavior.scaleBy, 1.4);
+}
+function mapZoomOut() {
+  if (mapSvg && mapZoomBehavior) mapSvg.transition().duration(300).call(mapZoomBehavior.scaleBy, 1 / 1.4);
+}
+function mapZoomReset() {
+  if (mapSvg && mapZoomBehavior) mapSvg.transition().duration(300).call(mapZoomBehavior.transform, d3.zoomIdentity);
+}
+
+function placePins(gPins, projection) {
+  gPins.selectAll('circle').data(allStations).join('circle')
+    .attr('class', 'pin-dot')
+    .attr('cx', s => projection([s.Longitude, s.Latitude])[0])
+    .attr('cy', s => projection([s.Longitude, s.Latitude])[1])
+    .attr('r', 8)
+    .attr('fill', s => s.Popularity_Category === 'Famous' ? '#3E7C4A' : '#4FA3A3')
+    .append('title').text(s => s.HillStation_Name);
+  gPins.selectAll('circle').on('click', (event, s) => { event.stopPropagation(); selectStation(s.HillStation_ID); });
+  selectStation('HS0371');
+}
+
+// ===== Wikipedia helpers (now also return a clickable page URL) =====
+async function fetchWikiImageChain(terms) {
+  for (const term of terms) {
+    if (!term) continue;
+    try {
+      const resp = await fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(term)}`);
+      if (resp.ok) {
+        const data = await resp.json();
+        if (data.thumbnail && data.thumbnail.source) {
+          const pageUrl = (data.content_urls && data.content_urls.desktop) ? data.content_urls.desktop.page : `https://en.wikipedia.org/wiki/${encodeURIComponent(term)}`;
+          return { url: data.thumbnail.source, matchedTerm: term, pageUrl };
+        }
+      }
+    } catch (e) { /* try next term */ }
+  }
+  return null;
+}
+
+// Pulls several real photos of a place from Wikimedia Commons (used for the drag-to-rotate viewer).
+async function fetchCommonsImages(term, limit) {
+  try {
+    const url = `https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=${encodeURIComponent(term)}&gsrnamespace=6&gsrlimit=${limit}&prop=imageinfo&iiprop=url&iiurlwidth=800&format=json&origin=*`;
+    const resp = await fetch(url);
+    if (!resp.ok) return [];
+    const data = await resp.json();
+    if (!data.query || !data.query.pages) return [];
+    return Object.values(data.query.pages)
+      .map(p => p.imageinfo && p.imageinfo[0] && (p.imageinfo[0].thumburl || p.imageinfo[0].url))
+      .filter(Boolean);
+  } catch (e) { return []; }
+}
+
+let photo360Images = [];
+let photo360Index = 0;
+
+async function loadPhoto360(station) {
+  const img = document.getElementById('photo360Img');
+  const hint = document.getElementById('photo360Hint');
+  const captionDiv = document.getElementById('stationPhotoCaption');
+  photo360Images = [];
+  photo360Index = 0;
+  img.src = '';
+  hint.textContent = 'Loading photos…';
+  captionDiv.textContent = '';
+
+  const commons = await fetchCommonsImages(station.HillStation_Name, 10);
+  let sourceLabel = 'Wikimedia Commons';
+  if (commons.length >= 3) {
+    photo360Images = commons;
+  } else {
+    const single = await fetchWikiImageChain([station.HillStation_Name, station.Mountain_Range, station.Region]);
+    if (single) { photo360Images = [single.url]; sourceLabel = 'Wikipedia'; }
+  }
+
+  if (photo360Images.length === 0) {
+    hint.textContent = 'No photos found';
+    captionDiv.textContent = 'No real photo found for this location or region.';
+    return;
+  }
+  img.src = photo360Images[0];
+  if (photo360Images.length > 1) {
+    hint.textContent = `📷 Drag to browse — 1/${photo360Images.length}`;
+    captionDiv.textContent = `${photo360Images.length} real photos from ${sourceLabel} — drag the image to spin through them.`;
+  } else {
+    hint.textContent = 'Photo';
+    captionDiv.textContent = `Photo source: ${sourceLabel}`;
+  }
+}
+
+function showPhotoMode() {
+  document.getElementById('photo360Wrap').style.display = 'block';
+  document.getElementById('streetViewWrap').style.display = 'none';
+  document.getElementById('stationPhotoCaption').style.display = 'block';
+  document.getElementById('btnPhotoMode').classList.add('active');
+  document.getElementById('btnStreetMode').classList.remove('active');
+}
+function showStreetViewMode() {
+  document.getElementById('photo360Wrap').style.display = 'none';
+  document.getElementById('streetViewWrap').style.display = 'block';
+  document.getElementById('stationPhotoCaption').style.display = 'none';
+  document.getElementById('btnStreetMode').classList.add('active');
+  document.getElementById('btnPhotoMode').classList.remove('active');
+}
+function loadStreetView(station) {
+  const frame = document.getElementById('streetViewFrame');
+  frame.src = `https://www.google.com/maps?layer=c&cbll=${station.Latitude},${station.Longitude}&output=svembed`;
+}
+
+function setupPhoto360Drag() {
+  const wrap = document.getElementById('photo360Wrap');
+  if (!wrap) return;
+  let startX = null;
+  const onMove = (x) => {
+    if (startX === null || photo360Images.length < 2) return;
+    const delta = x - startX;
+    if (Math.abs(delta) > 30) {
+      const dir = delta > 0 ? -1 : 1;
+      photo360Index = (photo360Index + dir + photo360Images.length) % photo360Images.length;
+      document.getElementById('photo360Img').src = photo360Images[photo360Index];
+      document.getElementById('photo360Hint').textContent = `📷 Drag to browse — ${photo360Index + 1}/${photo360Images.length}`;
+      startX = x;
+    }
+  };
+  wrap.addEventListener('mousedown', e => { startX = e.clientX; });
+  window.addEventListener('mousemove', e => onMove(e.clientX));
+  window.addEventListener('mouseup', () => { startX = null; });
+  wrap.addEventListener('touchstart', e => { startX = e.touches[0].clientX; });
+  wrap.addEventListener('touchmove', e => onMove(e.touches[0].clientX));
+  wrap.addEventListener('touchend', () => { startX = null; });
+}
+
+// ===== Nearby places (real data from OpenStreetMap via the free Overpass API) =====
+function haversineKm(lat1, lon1, lat2, lon2) {
+  const R = 6371;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180) * Math.cos(lat2*Math.PI/180) * Math.sin(dLon/2)**2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+
+let nearbyCache = {};
+const OVERPASS_ENDPOINTS = [
+  'https://overpass-api.de/api/interpreter',
+  'https://overpass.kumi.systems/api/interpreter',
+  'https://lz4.overpass-api.de/api/interpreter'
+];
+
+async function fetchNearbyPlaces(station) {
+  if (nearbyCache[station.HillStation_ID]) return nearbyCache[station.HillStation_ID];
+  const lat = station.Latitude, lon = station.Longitude;
+  const query = `[out:json][timeout:25];(
+    node["tourism"~"attraction|viewpoint|museum|zoo"](around:15000,${lat},${lon});
+    node["amenity"="restaurant"](around:10000,${lat},${lon});
+    node["amenity"="hospital"](around:20000,${lat},${lon});
+    node["leisure"~"park|playground"](around:10000,${lat},${lon});
+    node["tourism"="hotel"](around:10000,${lat},${lon});
+    node["railway"="station"](around:40000,${lat},${lon});
+    node["aeroway"="aerodrome"](around:100000,${lat},${lon});
+    node["amenity"="place_of_worship"](around:15000,${lat},${lon});
+  );out body 100;`;
+
+  let data = null;
+  for (const endpoint of OVERPASS_ENDPOINTS) {
+    try {
+      const resp = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: 'data=' + encodeURIComponent(query)
+      });
+      if (!resp.ok) continue;
+      data = await resp.json();
+      break;
+    } catch (e) { /* try next mirror */ }
+  }
+  if (!data) return null;
+
+  try {
+    const withDist = (data.elements || [])
+      .filter(e => e.tags && e.tags.name && e.lat && e.lon)
+      .map(e => ({ name: e.tags.name, tags: e.tags, lat: e.lat, lon: e.lon, distKm: haversineKm(lat, lon, e.lat, e.lon) }));
+    const cat = pred => withDist.filter(pred).sort((a,b) => a.distKm - b.distKm);
+    const result = {
+      attractions: cat(p => p.tags.tourism && ['attraction','viewpoint','museum','zoo'].includes(p.tags.tourism)).slice(0, 10),
+      restaurants: cat(p => p.tags.amenity === 'restaurant').slice(0, 6),
+      hospitals: cat(p => p.tags.amenity === 'hospital').slice(0, 5),
+      playAreas: cat(p => p.tags.leisure === 'park' || p.tags.leisure === 'playground').slice(0, 5),
+      hotels: cat(p => p.tags.tourism === 'hotel').slice(0, 6),
+      railway: cat(p => p.tags.railway === 'station').slice(0, 3),
+      airport: cat(p => p.tags.aeroway === 'aerodrome').slice(0, 2),
+      worshipHindu: cat(p => p.tags.amenity === 'place_of_worship' && p.tags.religion === 'hindu').slice(0, 6),
+      worshipChristian: cat(p => p.tags.amenity === 'place_of_worship' && p.tags.religion === 'christian').slice(0, 6),
+      worshipMuslim: cat(p => p.tags.amenity === 'place_of_worship' && p.tags.religion === 'muslim').slice(0, 6)
+    };
+    nearbyCache[station.HillStation_ID] = result;
+    return result;
+  } catch (e) { return null; }
+}
+
+function poiListHTML(items) {
+  if (!items || items.length === 0) return `<div class="field-row"><div class="field-value" style="color:#9aa79e;">${noDataMessage()}</div></div>`;
+  return items.map(p => `<div class="field-row"><div class="field-label">${p.name}</div><div class="field-value">${p.distKm.toFixed(1)} km${p.tags.opening_hours ? ' · ' + p.tags.opening_hours : ''} · <a href="https://www.google.com/maps?layer=c&cbll=${p.lat},${p.lon}" target="_blank" rel="noopener" style="color:#3E7C4A;font-weight:600;">🌐 360°</a></div></div>`).join('');
+}
+
+// Real geotagged photos taken near a specific point (used when nothing is directly linked to the place).
+async function fetchCommonsNearby(lat, lon, radiusMeters, limit) {
+  try {
+    const url = `https://commons.wikimedia.org/w/api.php?action=query&generator=geosearch&ggscoord=${lat}|${lon}&ggsradius=${radiusMeters}&ggsnamespace=6&ggslimit=${limit}&prop=imageinfo&iiprop=url&iiurlwidth=400&format=json&origin=*`;
+    const resp = await fetch(url);
+    if (!resp.ok) return [];
+    const data = await resp.json();
+    if (!data.query || !data.query.pages) return [];
+    return Object.values(data.query.pages)
+      .map(p => p.imageinfo && p.imageinfo[0] && (p.imageinfo[0].thumburl || p.imageinfo[0].url))
+      .filter(Boolean);
+  } catch (e) { return []; }
+}
+
+// Tries to find a real photo for a specific nearby place — OSM's own photo tag first,
+// then a linked Wikimedia Commons file, then a linked Wikipedia page, then a plain name search,
+// then a real geotagged photo taken near that exact spot (marked "nearby photo" since it isn't
+// guaranteed to be that specific business/building). Falls back to a category icon — never a
+// fake or invented photo — if nothing real turns up.
+async function resolvePoiImage(p) {
+  const tags = p.tags;
+  if (tags.image && /^https?:\/\//i.test(tags.image)) return { url: tags.image };
+  if (tags.wikimedia_commons && tags.wikimedia_commons.startsWith('File:')) {
+    return { url: `https://commons.wikimedia.org/wiki/Special:FilePath/${encodeURIComponent(tags.wikimedia_commons.slice(5))}?width=400` };
+  }
+  if (tags.wikipedia) {
+    const parts = tags.wikipedia.split(':');
+    const title = parts.length > 1 ? parts.slice(1).join(':') : parts[0];
+    try {
+      const resp = await fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(title)}`);
+      if (resp.ok) {
+        const data = await resp.json();
+        if (data.thumbnail && data.thumbnail.source) return { url: data.thumbnail.source };
+      }
+    } catch (e) { /* fall through */ }
+  }
+  const single = await fetchWikiImageChain([p.name]);
+  if (single) return { url: single.url };
+  if (p.lat && p.lon) {
+    const nearby = await fetchCommonsNearby(p.lat, p.lon, 200, 3);
+    if (nearby.length > 0) return { url: nearby[0], approximate: true };
+  }
+  return null;
+}
+
+function poiCardGridHTML(items, prefix, catKey, icon) {
+  if (!items || items.length === 0) return `<p style="color:#9aa79e;font-size:0.92rem;">${noDataMessage()}</p>`;
+  return `<div class="poi-grid">${items.map((p, i) => `
+    <div class="poi-card">
+      <div class="poi-photo" id="${prefix}_${catKey}_${i}">${icon}</div>
+      <div class="poi-name">${p.name}</div>
+      <div class="poi-meta" id="${prefix}_${catKey}_${i}_meta">${p.distKm.toFixed(1)} km${p.tags.opening_hours ? ' · ' + p.tags.opening_hours : ''}</div>
+      <a class="poi-360-link" href="https://www.google.com/maps?layer=c&cbll=${p.lat},${p.lon}" target="_blank" rel="noopener">🌐 360°</a>
+    </div>`).join('')}</div>`;
+}
+function poiCardGridLoad(items, prefix, catKey) {
+  if (!items) return;
+  items.forEach((p, i) => {
+    resolvePoiImage(p).then(result => {
+      const box = document.getElementById(`${prefix}_${catKey}_${i}`);
+      const meta = document.getElementById(`${prefix}_${catKey}_${i}_meta`);
+      if (!box || !result) return;
+      box.innerHTML = `<img src="${result.url}" alt="${p.name}">`;
+      if (result.approximate && meta) meta.innerHTML += ' · <span style="color:#b5730e;">nearby photo</span>';
+    });
+  });
+}
+
+function nearbyTabHTML(nearby, prefix) {
+  prefix = prefix || 'tab';
+  return `
+    <p class="report-note" style="margin-bottom:16px;">Names and distances are pulled live from OpenStreetMap. Photos are shown for Attractions and Parks where a real one could be found (a category icon appears otherwise). Restaurants, hotels and hospitals are listed by name only, since free map data essentially never has real photos of small local businesses. Every listing links to real Google Street View at that spot — coverage depends on Google, so very small places may show no imagery yet.</p>
+    <h3 class="report-subhead">🏞️ Top Attractions Nearby</h3>
+    ${poiCardGridHTML(nearby.attractions, prefix, 'attractions', '🏞️')}
+    <h3 class="report-subhead">🍽️ Restaurants Nearby</h3>
+    <div class="field-table">${poiListHTML(nearby.restaurants)}</div>
+    <h3 class="report-subhead">🏨 Hotels to Stay</h3>
+    <div class="field-table">${poiListHTML(nearby.hotels)}</div>
+    <h3 class="report-subhead">🏥 Hospitals Nearby</h3>
+    <div class="field-table">${poiListHTML(nearby.hospitals)}</div>
+    <h3 class="report-subhead">🎡 Play Areas / Parks</h3>
+    ${poiCardGridHTML(nearby.playAreas, prefix, 'playareas', '🎡')}
+  `;
+}
+function nearbyTabLoadImages(nearby, prefix) {
+  prefix = prefix || 'tab';
+  poiCardGridLoad(nearby.attractions, prefix, 'attractions');
+  poiCardGridLoad(nearby.playAreas, prefix, 'playareas');
+}
+
+function transportTabHTML(station, nearby) {
+  const rail = nearby.railway[0], air = nearby.airport[0];
+  const railTime = rail ? (rail.distKm / 30).toFixed(1) : null;
+  const airTime = air ? (air.distKm / 35).toFixed(1) : null;
+  let rec, modeKey;
+  if (air && air.distKm <= 120) {
+    rec = { mode: 'Flight + Cab', detail: `Fly into ${air.name} (${air.distKm.toFixed(0)} km away), then about ${airTime} hrs by road to reach ${station.HillStation_Name}.`, comfort: 'High — fastest option when an airport is this close' };
+    modeKey = 'flight';
+  } else if (rail && rail.distKm <= 60) {
+    rec = { mode: 'Train + Cab', detail: `Take a train to ${rail.name} (${rail.distKm.toFixed(0)} km away), then about ${railTime} hrs by road to reach ${station.HillStation_Name}.`, comfort: 'Medium-High — comfortable and usually scenic' };
+    modeKey = 'train';
+  } else {
+    rec = { mode: 'Road / Car Trip', detail: `No very close railway or airport connection was found — a direct road trip by car or bus is usually the most practical way to reach ${station.HillStation_Name}.`, comfort: 'Moderate — mountain roads can be winding, plan for rest stops' };
+    modeKey = 'car';
+  }
+
+  const html = `
+    <div class="stat-grid" style="grid-template-columns:1fr;">
+      <div class="card c-green"><div class="n" style="font-size:1.25rem;">${rec.mode}</div><div class="l">Recommended way to reach ${station.HillStation_Name}</div></div>
+    </div>
+    <div class="transport-anim-box" id="transportAnimBox"></div>
+    <p class="report-lead">${rec.detail}<br><b>Comfort level:</b> ${rec.comfort}</p>
+    <div class="field-table">
+      <div class="field-row"><div class="field-label">Nearest Railway Station</div><div class="field-value">${rail ? `${rail.name} (${rail.distKm.toFixed(1)} km, ~${railTime} hrs by road)` : 'Not found nearby in OpenStreetMap data'}</div></div>
+      <div class="field-row"><div class="field-label">Nearest Airport</div><div class="field-value">${air ? `${air.name} (${air.distKm.toFixed(1)} km, ~${airTime} hrs by road)` : 'Not found nearby in OpenStreetMap data'}</div></div>
+    </div>
+    <p class="report-note">Want a day-by-day traffic, timing and transport plan for a specific date? Head to the <b>📅 Calendar</b> page in the sidebar — pick a date there and it'll build a full weekday-vs-weekend visiting plan for this station.</p>
+    <h3 class="report-subhead">Hotels Near ${station.HillStation_Name}</h3>
+    <div class="field-table">${poiListHTML(nearby.hotels)}</div>
+    <p class="report-note">Travel times are rough estimates from straight-line distance and typical hill-road speeds — actual time depends on traffic, route and season.</p>
+  `;
+  return { html, modeKey };
+}
+
+function setupTransportAnimation(modeKey) {
+  const box = document.getElementById('transportAnimBox');
+  if (!box) return;
+  const icons = { car: '🚗', train: '🚆', flight: '✈️' };
+  const icon = icons[modeKey] || '🚗';
+  box.className = 'transport-anim-box mode-' + modeKey;
+  let inner = `<div class="transport-track"></div><div class="transport-vehicle">${icon}</div>`;
+  if (modeKey === 'flight') {
+    inner += `<div class="transport-cloud" style="top:14px;">☁️</div><div class="transport-cloud" style="top:48px;animation-delay:-6s;">☁️</div>`;
+  }
+  box.innerHTML = inner;
+}
+
+async function fetchWikiSummaryChain(terms) {
+  for (const term of terms) {
+    if (!term) continue;
+    try {
+      const resp = await fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(term)}`);
+      if (resp.ok) {
+        const data = await resp.json();
+        if (data.extract) {
+          const url = (data.content_urls && data.content_urls.desktop) ? data.content_urls.desktop.page : `https://en.wikipedia.org/wiki/${encodeURIComponent(term)}`;
+          return { title: data.title, extract: data.extract, url, matchedTerm: term };
+        }
+      }
+    } catch (e) { /* try next term */ }
+  }
+  return null;
+}
+
+function classifySpecies(type) {
+  const t = (type || '').toLowerCase();
+  if (t.includes('flower') || t.includes('orchid')) return 'flower';
+  if (t.includes('plant') || t.includes('herb') || t.includes('medicinal')) return 'plant';
+  if (t.includes('animal') || t.includes('bird') || t.includes('mammal') || t.includes('reptile') || t.includes('insect') || t.includes('fish')) return 'animal';
+  return 'other';
+}
+
+const REGION_PROFILES = [
+  { match: /western ghats/i, animal: 'Nilgiri langur', plant: 'Ocimum tenuiflorum', flower: 'Strobilanthes kunthiana' },
+  { match: /himalaya/i, animal: 'Himalayan monal', plant: 'Rhodiola rosea', flower: 'Rhododendron arboreum' },
+  { match: /eastern ghats/i, animal: 'Indian giant squirrel', plant: 'Centella asiatica', flower: 'Gloriosa superba' },
+  { match: /north\s?east/i, animal: 'Hoolock gibbon', plant: 'Houttuynia cordata', flower: 'Rhododendron niveum' },
+  { match: /aravalli/i, animal: 'Indian leopard', plant: 'Commiphora wightii', flower: 'Cassia fistula' }
+];
+function getRegionProfile(station) {
+  const text = `${station.Region || ''} ${station.Mountain_Range || ''}`;
+  for (const p of REGION_PROFILES) if (p.match.test(text)) return p;
+  return { animal: 'Indian peafowl', plant: 'Withania somnifera', flower: 'Rhododendron arboreum' };
+}
+
+function levelToValue(lvl) {
+  const v = { 'Very Low':1, 'Low':2, 'Medium':3, 'Moderate':3, 'High':4, 'Very High':5, 'Severe':5 };
+  return v[lvl] || 3;
+}
+
+function humanizeKey(k) {
+  return k.replace(/_/g, ' ');
+}
+
+function renderFieldTable(obj, extraExclude) {
+  extraExclude = extraExclude || [];
+  return Object.keys(obj)
+    .filter(k => !/_?id$/i.test(k) && !extraExclude.includes(k))
+    .map(k => `<div class="field-row"><div class="field-label">${humanizeKey(k)}</div><div class="field-value">${obj[k] !== null && obj[k] !== '' ? obj[k] : '—'}</div></div>`)
+    .join('');
+}
+
+function getVisitingInfo(station) {
+  const famous = station.Popularity_Category === 'Famous';
+  return {
+    hours: famous
+      ? '6:00 AM – 7:00 PM (individual viewpoints/parks usually close by evening)'
+      : 'Open year-round, no fixed gate timings — this is a hill town, not a single ticketed site',
+    fee: famous
+      ? '₹20–₹100 at specific viewpoints or parks (varies by attraction); the town itself is free to walk around'
+      : 'Free — open hill station, no entry ticket for the town itself'
+  };
+}
+
+function getWeekdayWeekendInfo(station) {
+  const famous = station.Popularity_Category === 'Famous';
+  return {
+    weekdayTraffic: 'Generally light — a calmer time to visit main attractions with fewer crowds',
+    weekendTraffic: famous
+      ? 'Often moderate to heavy, especially Saturday afternoon through Sunday, with slower local roads near popular viewpoints'
+      : 'A bit busier than weekdays but still generally manageable',
+    weekdayOpen: 'Most attractions, parks and viewpoints stay open as usual; a few government-run museums may be closed (commonly on Mondays) — check the hours listed for each place where available',
+    weekendOpen: 'Nearly everything stays open, including local markets and food stalls that tend to be quieter on weekdays'
+  };
+}
+
+// ===================== Reusable content blocks =====================
+
+function noDataMessage() {
+  return `No data available for this station — records weren't collected here, possibly due to low visitor footfall or restricted access for safety and security reasons.`;
+}
+
+function tourismBlockHTML(station, tourism, prefix) {
+  if (!tourism) return `<p>${noDataMessage()}</p>`;
+  const vi = getVisitingInfo(station);
+  return `
+    <div class="stat-grid" style="grid-template-columns:repeat(2,1fr);">
+      <div class="card c-green"><div class="n">${tourism.Visitor_Count.toLocaleString()}</div><div class="l">Visitors (2025)</div></div>
+      <div class="card c-orange"><div class="n">${tourism.Tourist_Satisfaction_Score}/5</div><div class="l">Satisfaction Score</div></div>
+    </div>
+    <h3 class="report-subhead">10-Year Visitor Trend <span class="report-tag">modeled projection</span></h3>
+    <div id="${prefix}TrendChart" class="report-chart-box"></div>
+    <h3 class="report-subhead">Typical Monthly Pattern <span class="report-tag">estimated from peak season</span></h3>
+    <div id="${prefix}SeasonChart" class="report-chart-box"></div>
+    <div class="field-table">
+      <div class="field-row"><div class="field-label">Peak Season</div><div class="field-value">${tourism.Peak_Season}</div></div>
+      <div class="field-row"><div class="field-label">Most Famous Spot</div><div class="field-value">${tourism.Most_Famous_Location}</div></div>
+      <div class="field-row"><div class="field-label">Least Visited Spot</div><div class="field-value">${tourism.Least_Visited_Location}</div></div>
+      <div class="field-row"><div class="field-label">Typical Hours</div><div class="field-value">${vi.hours}</div></div>
+      <div class="field-row"><div class="field-label">Typical Entry Fee</div><div class="field-value">${vi.fee}</div></div>
+    </div>
+    <p class="report-note">Hours and fee are a general pattern for this type of hill destination, not official published data — individual attractions inside the station may vary.</p>
+  `;
+}
+function tourismBlockDraw(tourism, stationId, prefix) {
+  if (!tourism) return;
+  drawTrendChart(tourism.Visitor_Count, stationId, `${prefix}TrendChart`);
+  drawSeasonChart(tourism.Peak_Season, `${prefix}SeasonChart`);
+}
+
+function threatsBlockHTML(damage, prefix) {
+  if (!damage) return `<p>${noDataMessage()}</p>`;
+  return `
+    <div id="${prefix}ThreatChart" class="report-chart-box"></div>
+    <div class="field-table">${renderFieldTable(damage)}</div>
+    <p class="report-note">Bars further right and in red mean a more severe level for that specific factor. Compare against the Preservation section to see what's being done about it.</p>
+  `;
+}
+function threatsBlockDraw(damage, prefix) {
+  if (!damage) return;
+  drawThreatChart(damage, `${prefix}ThreatChart`);
+}
+
+function preservationBlockHTML(pres, prefix) {
+  if (!pres) return `<p>${noDataMessage()}</p>`;
+  return `
+    <div class="gauge-wrap"><div id="${prefix}PreserveGauge"></div><div class="report-gauge-note">Effectiveness score out of 10 — how well current protection methods are working against the threats recorded for this station.</div></div>
+    <div class="field-table">${renderFieldTable(pres)}</div>
+  `;
+}
+function preservationBlockDraw(pres, prefix) {
+  if (!pres) return;
+  drawPreservationGauge(pres.Preservation_Effectiveness_Score, `${prefix}PreserveGauge`);
+}
+
+function bioGridHTML(prefix) {
+  return `
+    <div class="bio-grid">
+      <div class="bio-item"><div class="bio-label">🐾 Special Animal</div><div class="bio-photo-box" id="${prefix}Bio_animal"></div><div class="bio-caption" id="${prefix}BioCap_animal">Loading...</div></div>
+      <div class="bio-item"><div class="bio-label">🌿 Medicinal Plant</div><div class="bio-photo-box" id="${prefix}Bio_plant"></div><div class="bio-caption" id="${prefix}BioCap_plant">Loading...</div></div>
+      <div class="bio-item"><div class="bio-label">🌸 Special Flower</div><div class="bio-photo-box" id="${prefix}Bio_flower"></div><div class="bio-caption" id="${prefix}BioCap_flower">Loading...</div></div>
+    </div>
+  `;
+}
+function bioGridLoad(station, bioList, prefix) {
+  const profile = getRegionProfile(station);
+  const clean = n => (n || '').replace(/\(representative[^)]*\)/i, '').trim();
+  const dbAnimal = bioList.find(b => classifySpecies(b.Species_Type) === 'animal');
+  const dbPlant  = bioList.find(b => classifySpecies(b.Species_Type) === 'plant');
+  const dbFlower = bioList.find(b => classifySpecies(b.Species_Type) === 'flower');
+  const categories = [
+    { key: 'animal', dbEntry: dbAnimal, fallback: profile.animal },
+    { key: 'plant',  dbEntry: dbPlant,  fallback: profile.plant },
+    { key: 'flower', dbEntry: dbFlower, fallback: profile.flower }
+  ];
+  categories.forEach(c => {
+    const dbName = c.dbEntry ? clean(c.dbEntry.Species_Name) : null;
+    fetchWikiImageChain([dbName, c.fallback]).then(result => {
+      const photoBox = document.getElementById(`${prefix}Bio_${c.key}`);
+      const cap = document.getElementById(`${prefix}BioCap_${c.key}`);
+      if (!photoBox) return;
+      if (result) {
+        photoBox.innerHTML = `<img src="${result.url}" alt="${result.matchedTerm}">`;
+        const label = (dbName && result.matchedTerm.toLowerCase() === dbName.toLowerCase())
+          ? `${result.matchedTerm} — recorded at this station`
+          : `${result.matchedTerm} — representative for this region`;
+        cap.innerHTML = `<a href="${result.pageUrl}" target="_blank" rel="noopener">${label} ↗</a>`;
+      } else {
+        cap.textContent = 'No photo found.';
+      }
+    });
+  });
+}
+
+// ===================== Atlas tab panel (right-side, map view) =====================
+
+function getFavorites() {
+  try { return JSON.parse(localStorage.getItem('hillora_favorites') || '[]'); }
+  catch (e) { return []; }
+}
+function saveFavorites(list) {
+  localStorage.setItem('hillora_favorites', JSON.stringify(list));
+}
+function toggleFavorite() {
+  if (!currentId) return;
+  let favs = getFavorites();
+  if (favs.includes(currentId)) {
+    favs = favs.filter(id => id !== currentId);
+  } else {
+    favs.push(currentId);
+  }
+  saveFavorites(favs);
+  updateFavHeart();
+}
+function updateFavHeart() {
+  const heart = document.getElementById('favHeart');
+  if (!heart) return;
+  const favs = getFavorites();
+  if (currentId && favs.includes(currentId)) {
+    heart.textContent = '♥';
+    heart.style.color = '#C1666B';
+  } else {
+    heart.textContent = '♡';
+    heart.style.color = 'inherit';
+  }
+}
+function removeFavorite(id) {
+  const favs = getFavorites().filter(f => f !== id);
+  saveFavorites(favs);
+  if (id === currentId) updateFavHeart();
+  renderReport();
+}
+
+function selectStation(id) {
+  currentId = id;
+  const station = allStations.find(s => s.HillStation_ID === id);
+  const tourism = allTourism.find(t => t.HillStation_ID === id);
+  const bioList = allBiodiversity.filter(b => b.HillStation_ID === id);
+  const damage = allDamage.find(d => d.HillStation_ID === id);
+  const pres = allPreservation.find(p => p.HillStation_ID === id);
+  if (!station) return;
+
+  document.getElementById('stName').textContent = station.HillStation_Name;
+  document.getElementById('stState').textContent = station.State_UT;
+  document.getElementById('stCoords').textContent = `📍 ${station.Latitude}°N, ${station.Longitude}°E · Elevation: ${station.Elevation_M}m`;
+  document.getElementById('statVisitors').textContent = tourism ? tourism.Visitor_Count.toLocaleString() : '—';
+  document.getElementById('statSpecies').textContent = bioList.length > 0 ? (bioList.length + '+') : '3+';
+  document.getElementById('statAttractions').textContent = '—';
+  document.getElementById('statThreat').textContent = damage ? damage.Overall_Threat_Level : '—';
+  document.getElementById('statPreserve').textContent = pres ? pres.Preservation_Effectiveness_Score + '/10' : '—';
+
+  loadPhoto360(station);
+  loadStreetView(station);
+  showPhotoMode();
+
+  document.querySelectorAll('#tabRow span').forEach((s,i) => i===0 ? s.classList.add('active') : s.classList.remove('active'));
+  selectTab('overview', document.querySelector('#tabRow span'));
+  updateFavHeart();
+}
+
+function selectTab(tab, el) {
+  document.querySelectorAll('#tabRow span').forEach(s => s.classList.remove('active'));
+  el.classList.add('active');
+  const station = allStations.find(s => s.HillStation_ID === currentId);
+  const tourism = allTourism.find(t => t.HillStation_ID === currentId);
+  const bioList = allBiodiversity.filter(b => b.HillStation_ID === currentId);
+  const comm = allCommunity.find(c => c.HillStation_ID === currentId);
+  const damage = allDamage.find(d => d.HillStation_ID === currentId);
+  const pres = allPreservation.find(p => p.HillStation_ID === currentId);
+  const box = document.getElementById('stDetails');
+
+  if (tab === 'overview') {
+    box.innerHTML = `<b>District:</b> ${station.District}<br><b>Region:</b> ${station.Region}<br><b>Popularity:</b> ${station.Popularity_Category}<br><b>Description:</b> ${station.Description || '—'}`;
+
+  } else if (tab === 'community') {
+    box.innerHTML = comm ? `<b>Tribal Communities:</b> ${comm.Tribal_Communities}<br><b>Lifestyle:</b> ${comm.Lifestyle}<br><b>Occupations:</b> ${comm.Traditional_Occupations}<br><b>Food Culture:</b> ${comm.Food_Culture}<br><b>Population:</b> ${comm.Population}` : noDataMessage();
+
+  } else if (tab === 'biodiversity') {
+    box.innerHTML = `<b>Biodiversity Highlights</b>${bioGridHTML('tab')}<br><b>Recorded Species (database):</b> ${bioList.length > 0 ? bioList.map(b => b.Species_Name).join(', ') : 'None logged individually — shown above are region-representative species.'}`;
+    bioGridLoad(station, bioList, 'tab');
+
+  } else if (tab === 'tourism') {
+    box.innerHTML = tourismBlockHTML(station, tourism, 'tab');
+    tourismBlockDraw(tourism, currentId, 'tab');
+
+  } else if (tab === 'threats') {
+    box.innerHTML = threatsBlockHTML(damage, 'tab');
+    threatsBlockDraw(damage, 'tab');
+
+  } else if (tab === 'preservation') {
+    box.innerHTML = preservationBlockHTML(pres, 'tab');
+    preservationBlockDraw(pres, 'tab');
+
+  } else if (tab === 'dictionary') {
+    box.innerHTML = `<div id="dictBox">Loading Wikipedia information...</div>`;
+    fetchWikiSummaryChain([station.HillStation_Name, station.Mountain_Range, station.Region]).then(result => {
+      const dictBox = document.getElementById('dictBox');
+      if (!dictBox) return;
+      if (result) {
+        dictBox.innerHTML = `<div class="dict-title">${result.title}</div><p>${result.extract}</p><a class="dict-link" href="${result.url}" target="_blank" rel="noopener">Read full article on Wikipedia ↗</a><div class="dict-source">Source: Wikipedia (CC BY-SA) — matched via "${result.matchedTerm}"</div>`;
+      } else {
+        dictBox.innerHTML = 'No Wikipedia article found for this station or its region.';
+      }
+    });
+
+  } else if (tab === 'nearby') {
+    box.innerHTML = 'Loading nearby places from OpenStreetMap...';
+    fetchNearbyPlaces(station).then(nearby => {
+      if (!nearby) { box.innerHTML = 'Could not load nearby places right now — try again in a moment.'; return; }
+      box.innerHTML = nearbyTabHTML(nearby, 'tab');
+      nearbyTabLoadImages(nearby, 'tab');
+    });
+
+  } else if (tab === 'transport') {
+    box.innerHTML = 'Loading transport info from OpenStreetMap...';
+    fetchNearbyPlaces(station).then(nearby => {
+      if (!nearby) { box.innerHTML = 'Could not load transport info right now — try again in a moment.'; return; }
+      const t = transportTabHTML(station, nearby);
+      box.innerHTML = t.html;
+      setupTransportAnimation(t.modeKey);
+    });
+  }
+}
+
+// ===================== Charts (id-parameterized so tab view and report view never collide) =====================
+
+function seededRandom(seed) {
+  let x = Math.sin(seed) * 10000;
+  return x - Math.floor(x);
+}
+
+function drawTrendChart(currentVisitors, stationId, targetId) {
+  const years = [2016,2017,2018,2019,2020,2021,2022,2023,2024,2025];
+  const seed = stationId.charCodeAt(2) + stationId.charCodeAt(3);
+  let values = [];
+  let v = currentVisitors * 0.55;
+  years.forEach((y, i) => {
+    const growth = 0.06 + seededRandom(seed + i) * 0.05;
+    v = i === years.length - 1 ? currentVisitors : v * (1 + growth);
+    values.push(Math.round(v));
+  });
+  const max = Math.max(...values);
+  const w = 620, h = 200, pad = 40;
+  let points = values.map((val, i) => {
+    const x = pad + (i / (years.length - 1)) * (w - pad * 2);
+    const y = h - 35 - (val / max) * (h - 70);
+    return `${x},${y}`;
+  }).join(' ');
+  let dots = values.map((val, i) => {
+    const x = pad + (i / (years.length - 1)) * (w - pad * 2);
+    const y = h - 35 - (val / max) * (h - 70);
+    return `<circle cx="${x}" cy="${y}" r="5" fill="#3E7C4A"><title>${years[i]}: ${val.toLocaleString()} visitors</title></circle>`;
+  }).join('');
+  let labels = years.map((y, i) => {
+    const x = pad + (i / (years.length - 1)) * (w - pad * 2);
+    return `<text x="${x}" y="${h-8}" font-size="18" fill="#7c8a7e" text-anchor="middle">${y}</text>`;
+  }).join('');
+  document.getElementById(targetId).innerHTML = `
+    <svg viewBox="0 0 ${w} ${h}" width="100%">
+      <polyline points="${points}" fill="none" stroke="#3E7C4A" stroke-width="3.5"/>
+      ${dots}${labels}
+    </svg>`;
+}
+
+function drawSeasonChart(peakSeason, targetId) {
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const peakMonths = { 'Nov-Feb (Winter)':[10,11,0,1], 'Mar-Jun (Summer)':[2,3,4,5], 'Jul-Sep (Monsoon)':[6,7,8] };
+  const peaks = peakMonths[peakSeason] || [10,11,0,1];
+  const w = 620, h = 170, barW = w / 12;
+  let bars = months.map((m, i) => {
+    const isPeak = peaks.includes(i);
+    const height = isPeak ? 115 : 45 + (i % 3) * 14;
+    const x = i * barW + 6;
+    const y = h - 26 - height;
+    return `<rect x="${x}" y="${y}" width="${barW-12}" height="${height}" fill="${isPeak ? '#E8A33D' : '#c9d4c1'}" rx="3"><title>${m}</title></rect>
+            <text x="${x + (barW-12)/2}" y="${h-6}" font-size="17" fill="#7c8a7e" text-anchor="middle">${m}</text>`;
+  }).join('');
+  document.getElementById(targetId).innerHTML = `<svg viewBox="0 0 ${w} ${h}" width="100%">${bars}</svg>`;
+}
+
+function drawThreatChart(damage, targetId) {
+  const items = [
+    ['Deforestation', damage.Deforestation],
+    ['Pollution', damage.Pollution_Level],
+    ['Overcrowding', damage.Overcrowding_Level],
+    ['Env. Damage', damage.Environmental_Damage_Rate]
+  ];
+  const w = 620, h = 190, barH = 30, gap = 16, max = 5, labelW = 160;
+  let bars = items.map((it, i) => {
+    const val = levelToValue(it[1]);
+    const barW = (val / max) * (w - labelW - 90);
+    const y = i * (barH + gap) + 10;
+    const color = val >= 4 ? '#C1666B' : val >= 3 ? '#E8A33D' : '#3E7C4A';
+    return `<text x="0" y="${y + barH/2 + 5}" font-size="16" fill="#4a5a4d">${it[0]}</text>
+            <rect x="${labelW}" y="${y}" width="${barW}" height="${barH}" rx="6" fill="${color}"/>
+            <text x="${labelW + barW + 10}" y="${y + barH/2 + 5}" font-size="15" fill="#7c8a7e">${it[1]}</text>`;
+  }).join('');
+  document.getElementById(targetId).innerHTML = `<svg viewBox="0 0 ${w} ${h}" width="100%">${bars}</svg>`;
+}
+
+function drawPreservationGauge(score, targetId) {
+  const s = Number(score) || 0;
+  const pct = Math.max(0, Math.min(10, s)) / 10;
+  const r = 70, cx = 90, cy = 90;
+  const circumference = 2 * Math.PI * r;
+  const dash = circumference * pct;
+  document.getElementById(targetId).innerHTML = `
+    <svg viewBox="0 0 180 180" width="180" height="180">
+      <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="#eef3e6" stroke-width="18"/>
+      <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="#6b3fa0" stroke-width="18"
+        stroke-dasharray="${dash} ${circumference}" stroke-linecap="round"
+        transform="rotate(-90 ${cx} ${cy})"/>
+      <text x="${cx}" y="${cy+8}" text-anchor="middle" font-size="26" font-family="Fraunces, serif" fill="#16261F">${s}/10</text>
+    </svg>`;
+}
+
+// ===================== Sidebar report pages =====================
+
+function showAtlas() {
+  document.getElementById('atlasMain').style.display = 'flex';
+  document.getElementById('reportView').style.display = 'none';
+  document.querySelectorAll('.sidebar .item').forEach(i => i.classList.remove('active'));
+  document.getElementById('sb-atlas').classList.add('active');
+}
+
+function openReport(section, el) {
+  currentReportSection = section;
+  currentReportStationId = currentId || (allStations[0] && allStations[0].HillStation_ID);
+  if (section === 'guide') { guideTripType = null; }
+  if (section === 'calendar') { calendarSelectedDate = null; calendarNearby = null; }
+
+  document.getElementById('atlasMain').style.display = 'none';
+  document.getElementById('reportView').style.display = 'block';
+  document.querySelectorAll('.sidebar .item').forEach(i => i.classList.remove('active'));
+  if (el) el.classList.add('active');
+
+  const select = document.getElementById('reportStationSelect');
+  const noStationSections = ['insights', 'about', 'favorites', 'tea', 'coffee', 'chocolate'];
+  const needsStation = !noStationSections.includes(section);
+  select.style.display = needsStation ? 'inline-block' : 'none';
+  if (needsStation && select.options.length === 0) {
+    const sorted = [...allStations].sort((a,b) => a.HillStation_Name.localeCompare(b.HillStation_Name));
+    select.innerHTML = sorted.map(s => `<option value="${s.HillStation_ID}">${s.HillStation_Name}</option>`).join('');
+  }
+  if (needsStation) select.value = currentReportStationId;
+
+  renderReport();
+}
+
+function onReportStationChange() {
+  currentReportStationId = document.getElementById('reportStationSelect').value;
+  if (currentReportSection === 'calendar') { calendarNearby = null; }
+  renderReport();
+}
+
+const sectionTitles = {
+  biodiversity: 'Biodiversity Report', communities: 'Community Report', tourism: 'Tourism Report',
+  threats: 'Threats Report', preservation: 'Preservation Report', insights: 'Insights',
+  reports: 'Full Station Report', about: 'About Hillora', favorites: 'My Favorite Places',
+  guide: 'Trip Guide', calendar: 'Religious Calendar & Visiting Plan',
+  specialty: 'Local Specialty & Gifts', tea: 'Tea Guide', coffee: 'Coffee Guide', chocolate: 'Chocolate Guide'
+};
+
+function renderReport() {
+  const section = currentReportSection;
+  const titleEl = document.getElementById('reportTitle');
+  const body = document.getElementById('reportBody');
+
+  if (section === 'insights') {
+    titleEl.textContent = sectionTitles.insights;
+    body.innerHTML = insightsReportHTML();
+    return;
+  }
+  if (section === 'about') {
+    titleEl.textContent = sectionTitles.about;
+    body.innerHTML = aboutHTML();
+    return;
+  }
+  if (section === 'favorites') {
+    titleEl.textContent = sectionTitles.favorites;
+    body.innerHTML = favoritesHTML();
+    return;
+  }
+  if (section === 'tea') {
+    titleEl.textContent = sectionTitles.tea;
+    body.innerHTML = brewGuideHTML(TEA_PROFILES, '🍃', 'tea');
+    brewGuideLoad(TEA_PROFILES, 'tea');
+    return;
+  }
+  if (section === 'coffee') {
+    titleEl.textContent = sectionTitles.coffee;
+    body.innerHTML = brewGuideHTML(COFFEE_PROFILES, '🫘', 'coffee');
+    brewGuideLoad(COFFEE_PROFILES, 'coffee');
+    return;
+  }
+  if (section === 'chocolate') {
+    titleEl.textContent = sectionTitles.chocolate;
+    body.innerHTML = brewGuideHTML(CHOCOLATE_PROFILES, '🍫', 'choc');
+    brewGuideLoad(CHOCOLATE_PROFILES, 'choc');
+    return;
+  }
+
+  const id = currentReportStationId;
+  const station = allStations.find(s => s.HillStation_ID === id);
+  if (!station) { body.innerHTML = 'No station selected.'; return; }
+  titleEl.textContent = `${station.HillStation_Name} — ${sectionTitles[section]}`;
+
+  const tourism = allTourism.find(t => t.HillStation_ID === id);
+  const bioList = allBiodiversity.filter(b => b.HillStation_ID === id);
+  const comm = allCommunity.find(c => c.HillStation_ID === id);
+  const damage = allDamage.find(d => d.HillStation_ID === id);
+  const pres = allPreservation.find(p => p.HillStation_ID === id);
+
+  if (section === 'biodiversity') {
+    body.innerHTML = `<p class="report-lead">The animal, medicinal plant, and flower most associated with ${station.HillStation_Name}.</p>${bioGridHTML('report')}<h3 class="report-subhead">Recorded Species (database)</h3><div class="field-table">${bioList.length ? bioList.map(b => `<div class="field-row"><div class="field-label">${b.Species_Name}</div><div class="field-value">${b.Species_Type}</div></div>`).join('') : '<div class="field-row"><div class="field-value">None logged individually.</div></div>'}</div>`;
+    bioGridLoad(station, bioList, 'report');
+
+  } else if (section === 'communities') {
+    body.innerHTML = comm ? `<p class="report-lead">Who lives in and around ${station.HillStation_Name}, and how.</p><div class="field-table">${renderFieldTable(comm)}</div>` : `<p>${noDataMessage()}</p>`;
+
+  } else if (section === 'tourism') {
+    body.innerHTML = `<p class="report-lead">Visitor patterns and practical info for ${station.HillStation_Name}.</p>${tourismBlockHTML(station, tourism, 'report')}`;
+    tourismBlockDraw(tourism, id, 'report');
+
+  } else if (section === 'threats') {
+    body.innerHTML = `<p class="report-lead">How much environmental stress ${station.HillStation_Name} is under, and which factors are driving it.</p>${threatsBlockHTML(damage, 'report')}`;
+    threatsBlockDraw(damage, 'report');
+
+  } else if (section === 'preservation') {
+    body.innerHTML = `<p class="report-lead">How effectively ${station.HillStation_Name} is currently being protected.</p>${preservationBlockHTML(pres, 'report')}`;
+    preservationBlockDraw(pres, 'report');
+
+  } else if (section === 'specialty') {
+    body.innerHTML = `<p class="report-lead">What ${station.HillStation_Name} is known for, and what to bring home.</p>${specialtyBlockHTML(station, 'report')}`;
+    specialtyBlockDraw(station, 'report');
+    specialtyBlockLoadImages(station, 'report');
+
+  } else if (section === 'reports') {
+    body.innerHTML = `
+      <h3 class="report-subhead">Overview</h3>
+      <div class="field-table">${renderFieldTable(station)}</div>
+      <h3 class="report-subhead">Tourism</h3>
+      ${tourismBlockHTML(station, tourism, 'full')}
+      <h3 class="report-subhead">Community</h3>
+      ${comm ? `<div class="field-table">${renderFieldTable(comm)}</div>` : `<p>${noDataMessage()}</p>`}
+      <h3 class="report-subhead">Biodiversity</h3>
+      ${bioGridHTML('full')}
+      <h3 class="report-subhead">Threats</h3>
+      ${threatsBlockHTML(damage, 'full')}
+      <h3 class="report-subhead">Preservation</h3>
+      ${preservationBlockHTML(pres, 'full')}
+      <h3 class="report-subhead">Local Specialty & Gifts</h3>
+      ${specialtyBlockHTML(station, 'full')}
+    `;
+    tourismBlockDraw(tourism, id, 'full');
+    threatsBlockDraw(damage, 'full');
+    preservationBlockDraw(pres, 'full');
+    bioGridLoad(station, bioList, 'full');
+    specialtyBlockDraw(station, 'full');
+    specialtyBlockLoadImages(station, 'full');
+
+  } else if (section === 'guide') {
+    body.innerHTML = guideFormHTML(station);
+
+  } else if (section === 'calendar') {
+    body.innerHTML = calendarHTML(station);
+    fetchNearbyPlaces(station).then(nearby => { calendarNearby = nearby; if (calendarSelectedDate) renderCalendarResult(); });
+  }
+}
+
+function insightsReportHTML() {
+  const totalStations = allStations.length;
+  const avgVisitors = allTourism.length ? Math.round(allTourism.reduce((s,t) => s + (t.Visitor_Count || 0), 0) / allTourism.length) : 0;
+  const avgPreserve = allPreservation.length ? (allPreservation.reduce((s,p) => s + (Number(p.Preservation_Effectiveness_Score) || 0), 0) / allPreservation.length).toFixed(1) : '—';
+  const threatCounts = {};
+  allDamage.forEach(d => { const lvl = d.Overall_Threat_Level || 'Unknown'; threatCounts[lvl] = (threatCounts[lvl] || 0) + 1; });
+  const threatRows = Object.keys(threatCounts).map(k => `<div class="field-row"><div class="field-label">${k}</div><div class="field-value">${threatCounts[k]} stations</div></div>`).join('');
+  return `
+    <p class="report-lead">A quick look across all ${totalStations} hill stations in the database.</p>
+    <div class="stat-grid" style="grid-template-columns:repeat(3,1fr);">
+      <div class="card c-green"><div class="n">${totalStations}</div><div class="l">Hill Stations</div></div>
+      <div class="card c-green"><div class="n">${avgVisitors.toLocaleString()}</div><div class="l">Avg. Visitors</div></div>
+      <div class="card c-purple"><div class="n">${avgPreserve}/10</div><div class="l">Avg. Preservation Score</div></div>
+    </div>
+    <h3 class="report-subhead">Overall Threat Level — station count by category</h3>
+    <div class="field-table">${threatRows}</div>
+  `;
+}
+
+function favoritesHTML() {
+  const favs = getFavorites();
+  if (favs.length === 0) {
+    return `<p class="report-lead">You haven't saved any hill stations yet. Click the ♡ next to a station's name on the Atlas page to add it here.</p>`;
+  }
+  const rows = favs.map(id => {
+    const s = allStations.find(st => st.HillStation_ID === id);
+    if (!s) return '';
+    return `<div class="fav-item">
+      <span class="fav-name" onclick="showAtlas(); selectStation('${id}');">${s.HillStation_Name} <span style="color:#9aa79e;font-weight:400;font-size:0.9rem;">— ${s.State_UT}</span></span>
+      <span class="fav-remove" onclick="removeFavorite('${id}')">Remove</span>
+    </div>`;
+  }).join('');
+  return `<p class="report-lead">${favs.length} saved place${favs.length > 1 ? 's' : ''}.</p><div class="field-table">${rows}</div>`;
+}
+
+// ===================== Trip Guide =====================
+let guideTripType = null;
+
+function guideFormHTML(station) {
+  return `
+    <p class="report-lead">Answer a couple of quick questions and I'll put together a day-by-day plan for ${station.HillStation_Name} using real nearby places already in this app.</p>
+    <div class="guide-field">
+      <label>Who's this trip for?</label>
+      <div class="guide-choice-row" id="guideTypeRow">
+        <button class="guide-choice-btn" onclick="setGuideTripType('Family', this)">👨‍👩‍👧 Family</button>
+        <button class="guide-choice-btn" onclick="setGuideTripType('Bachelor', this)">🎒 Bachelor</button>
+        <button class="guide-choice-btn" onclick="setGuideTripType('Couple', this)">💑 Couple</button>
+        <button class="guide-choice-btn" onclick="setGuideTripType('Solo', this)">🧍 Solo</button>
+      </div>
+    </div>
+    <div class="guide-field">
+      <label>How many days?</label>
+      <input type="number" id="guideDays" min="1" max="7" value="2">
+    </div>
+    <div class="guide-field">
+      <label>How many nights?</label>
+      <input type="number" id="guideNights" min="0" max="7" value="1">
+    </div>
+    <button class="guide-generate-btn" onclick="generateTripGuide()">✨ Generate My Guide</button>
+    <div id="guideResult" style="margin-top:24px;"></div>
+  `;
+}
+
+function setGuideTripType(type, el) {
+  guideTripType = type;
+  document.querySelectorAll('#guideTypeRow .guide-choice-btn').forEach(b => b.classList.remove('selected'));
+  el.classList.add('selected');
+}
+
+function formatClock(minutesFromMidnight) {
+  const h = Math.floor(minutesFromMidnight / 60) % 24;
+  const m = minutesFromMidnight % 60;
+  const ampm = h >= 12 ? 'PM' : 'AM';
+  let h12 = h % 12; if (h12 === 0) h12 = 12;
+  return `${h12}:${String(m).padStart(2, '0')} ${ampm}`;
+}
+function localTravelMode(distKm) {
+  return distKm <= 2 ? 'a short walk or auto-rickshaw' : 'a local taxi/cab';
+}
+
+// Each trip type gets a genuinely different plan: different wake time, pace, visit length,
+// travel speed assumption, whether there's a lunch break, and which kind of place gets priority.
+const TRIP_TYPE_CONFIG = {
+  Family:   { wakeMin: 7*60+30, stopsPerDay: 2, visitDurMin: 90, travelSpeedKmh: 18, lunchBreak: true,  priority: ['zoo','museum','attraction','viewpoint'], pace: 'a relaxed pace with kid-friendly stops, a proper lunch break, and enough rest time' },
+  Bachelor: { wakeMin: 6*60,     stopsPerDay: 4, visitDurMin: 45, travelSpeedKmh: 25, lunchBreak: false, priority: ['viewpoint','attraction','zoo','museum'], pace: 'an early start with a fuller, faster-moving itinerary and more stops packed into each day' },
+  Couple:   { wakeMin: 8*60,     stopsPerDay: 2, visitDurMin: 100, travelSpeedKmh: 18, lunchBreak: false, priority: ['viewpoint','attraction','museum','zoo'], pace: 'a slow, scenic pace prioritizing viewpoints, with a later start and long, unhurried stops' },
+  Solo:     { wakeMin: 7*60,     stopsPerDay: 3, visitDurMin: 60, travelSpeedKmh: 20, lunchBreak: false, priority: ['attraction','viewpoint','museum','zoo'], pace: 'a flexible, moderate pace you can speed up or slow down as you like' }
+};
+
+async function generateTripGuide() {
+  const station = allStations.find(s => s.HillStation_ID === currentReportStationId);
+  const days = Math.max(1, Math.min(7, Number(document.getElementById('guideDays').value) || 2));
+  const nights = Math.max(0, Math.min(7, Number(document.getElementById('guideNights').value) || 0));
+  const type = guideTripType || 'Family';
+  const cfg = TRIP_TYPE_CONFIG[type];
+  const resultDiv = document.getElementById('guideResult');
+  resultDiv.innerHTML = 'Building your guide from real nearby-places data...';
+
+  const nearby = await fetchNearbyPlaces(station);
+  if (!nearby) { resultDiv.innerHTML = 'Could not load places data right now — try again in a moment.'; return; }
+
+  // Combine attractions + parks, dedupe, then sort so this trip type's preferred kind of place comes first.
+  const seen = new Set();
+  let pool = [...nearby.attractions, ...nearby.playAreas].filter(p => {
+    if (seen.has(p.name)) return false;
+    seen.add(p.name);
+    return true;
+  });
+  pool.sort((a, b) => {
+    const ai = cfg.priority.indexOf(a.tags.tourism); const bi = cfg.priority.indexOf(b.tags.tourism);
+    const aRank = ai === -1 ? cfg.priority.length : ai;
+    const bRank = bi === -1 ? cfg.priority.length : bi;
+    if (aRank !== bRank) return aRank - bRank;
+    return a.distKm - b.distKm;
+  });
+
+  // Fill each day up to this type's stops-per-day from the prioritized pool; if there aren't enough
+  // real places for that, fall back to round-robin so no day is ever left completely empty.
+  let dayPicks = Array.from({ length: days }, () => []);
+  if (pool.length >= days) {
+    let idx = 0;
+    for (let d = 0; d < days; d++) {
+      for (let s = 0; s < cfg.stopsPerDay && idx < pool.length; s++) { dayPicks[d].push(pool[idx]); idx++; }
+    }
+  } else {
+    pool.forEach((p, i) => dayPicks[i % days].push(p));
+  }
+
+  const topHotel = nearby.hotels[0];
+  const topRestaurants = nearby.restaurants.slice(0, 3);
+  const trafficNote = station.Popularity_Category === 'Famous' ? 'moderate to heavy, especially in peak season' : 'generally light';
+  const wk = getWeekdayWeekendInfo(station);
+
+  // Build a clock-time schedule per day (used only for audio — never shown as on-screen text).
+  const dayCards = dayPicks.map((picks, d) => {
+    let clock = cfg.wakeMin + 90; // breakfast + getting ready
+    const stops = [];
+    picks.forEach((p, i) => {
+      if (cfg.lunchBreak && i === Math.ceil(picks.length / 2) && picks.length > 1) {
+        clock += 60; // lunch break
+      }
+      const travelMin = Math.max(10, Math.round((p.distKm / cfg.travelSpeedKmh) * 60));
+      clock += travelMin;
+      const arrival = clock;
+      clock += cfg.visitDurMin;
+      stops.push({ name: p.name, distKm: p.distKm, travelMin, mode: localTravelMode(p.distKm), arrival: formatClock(arrival), leave: formatClock(clock), lunchBefore: cfg.lunchBreak && i === Math.ceil(picks.length / 2) && picks.length > 1 });
+    });
+    return { day: d + 1, stops };
+  });
+
+  const introText = station.Description
+    ? station.Description
+    : `${station.HillStation_Name} is a hill station in ${station.District || station.Region}, known for its natural surroundings.`;
+
+  // ===== Visible on-screen guide: places only, no timings =====
+  let html = `<h3 class="report-subhead">${type} Trip — ${days} Day${days>1?'s':''} / ${nights} Night${nights!==1?'s':''} in ${station.HillStation_Name}</h3>`;
+  html += `<p class="report-lead">Planned at ${cfg.pace}. Traffic here tends to be ${trafficNote} — with more detail on weekday vs weekend traffic and what's open in the audio guide below.</p>`;
+
+  dayCards.forEach(dc => {
+    html += `<div class="guide-day-card"><h4>Day ${dc.day}</h4>`;
+    if (dc.stops.length === 0) {
+      html += `<p>No further individually-listed attractions for this day in OpenStreetMap — spend it exploring ${station.HillStation_Name}'s town center, local markets, and cafés at your own pace.</p>`;
+    } else {
+      html += dc.stops.map(s => `<div>📍 <b>${s.name}</b> <span style="color:#9aa79e;font-size:0.85rem;">(${s.distKm.toFixed(1)} km)</span></div>`).join('');
+    }
+    html += `</div>`;
+  });
+
+  html += `<h3 class="report-subhead">Where to Stay</h3>`;
+  html += topHotel ? `<div class="field-table"><div class="field-row"><div class="field-label">${topHotel.name}</div><div class="field-value">${topHotel.distKm.toFixed(1)} km</div></div></div>` : `<p style="color:#9aa79e;">${noDataMessage()}</p>`;
+  html += `<h3 class="report-subhead">Where to Eat</h3>`;
+  html += topRestaurants.length ? `<div class="field-table">${topRestaurants.map(r => `<div class="field-row"><div class="field-label">${r.name}</div><div class="field-value">${r.distKm.toFixed(1)} km</div></div>`).join('')}</div>` : `<p style="color:#9aa79e;">${noDataMessage()}</p>`;
+  html += `<div class="guide-audio-row">
+      <button class="guide-audio-btn" onclick="playGuideAudio()">▶ Play Audio Guide</button>
+      <button class="guide-audio-btn" style="background:#C1666B;" onclick="stopGuideAudio()">⏹ Stop</button>
+    </div>`;
+
+  // ===== Audio-only narrated script: this is where all timing/transport/traffic detail lives =====
+  let audioScript = `Welcome to ${station.HillStation_Name}. ${introText} This is a ${type.toLowerCase()} trip planned for ${days} day${days>1?'s':''} and ${nights} night${nights!==1?'s':''}, at ${cfg.pace}. Traffic around here tends to be ${trafficNote}. On weekdays, traffic is ${wk.weekdayTraffic.toLowerCase()}. ${wk.weekdayOpen}. On weekends, traffic is ${wk.weekendTraffic.toLowerCase()}. ${wk.weekendOpen}. `;
+  dayCards.forEach(dc => {
+    audioScript += `Day ${dc.day}. Wake up around ${formatClock(cfg.wakeMin)} and start after breakfast. `;
+    if (dc.stops.length === 0) {
+      audioScript += `Spend today exploring the town center, local markets, and cafés at your own pace. `;
+    } else {
+      dc.stops.forEach((s, i) => {
+        if (s.lunchBefore) audioScript += `Take a lunch break, then continue. `;
+        audioScript += `${i === 0 ? 'First head to' : 'Next, head to'} ${s.name}, about ${s.distKm.toFixed(1)} kilometers away, by ${s.mode}, taking around ${s.travelMin} minutes. You should arrive around ${s.arrival}, and plan to leave by around ${s.leave}. `;
+      });
+    }
+  });
+  if (topHotel) audioScript += `For your stay, ${topHotel.name} is about ${topHotel.distKm.toFixed(1)} kilometers away. `;
+  if (topRestaurants.length) audioScript += `For food, good options nearby include ${topRestaurants.map(r => r.name).join(', ')}. `;
+  audioScript += `Have a great trip to ${station.HillStation_Name}.`;
+
+  html += `<div id="guideAudioText" style="display:none;">${audioScript}</div>`;
+  resultDiv.innerHTML = html;
+}
+
+let currentUtterance = null;
+let voiceKeepAliveTimer = null;
+
+function playAudioFor(elId) {
+  const textEl = document.getElementById(elId);
+  if (!textEl || !window.speechSynthesis) { alert('Audio playback is not supported in this browser.'); return; }
+  const text = textEl.textContent.trim();
+  if (!text) { alert('Nothing to play yet.'); return; }
+
+  window.speechSynthesis.cancel();
+  clearInterval(voiceKeepAliveTimer);
+
+  // Small delay avoids a Chrome race condition where speak() right after cancel() is silently dropped.
+  setTimeout(() => {
+    currentUtterance = new SpeechSynthesisUtterance(text);
+    currentUtterance.rate = 0.95;
+    currentUtterance.onstart = () => {
+      // Chrome auto-pauses long speech after ~15s of silence internally — this nudge keeps it going.
+      voiceKeepAliveTimer = setInterval(() => {
+        window.speechSynthesis.pause();
+        window.speechSynthesis.resume();
+      }, 4000);
+    };
+    currentUtterance.onend = () => clearInterval(voiceKeepAliveTimer);
+    currentUtterance.onerror = () => {
+      clearInterval(voiceKeepAliveTimer);
+      alert('Audio playback failed to start. Check that your device volume is up and try again — some browsers block audio until you interact with the page first.');
+    };
+    window.speechSynthesis.speak(currentUtterance);
+  }, 60);
+}
+function stopAudio() {
+  clearInterval(voiceKeepAliveTimer);
+  if (window.speechSynthesis) window.speechSynthesis.cancel();
+}
+// Back-compat wrappers used by the Trip Guide buttons
+function playGuideAudio() { playAudioFor('guideAudioText'); }
+function stopGuideAudio() { stopAudio(); }
+
+// ===================== Calendar (weekly religious notes + weekday/weekend visiting plan) =====================
+let calendarSelectedDate = null;
+let calendarNearby = null;
+
+// General weekly religious observances — traditional weekly patterns, not an exact festival/Panchang calendar.
+const WEEKLY_RELIGIOUS_NOTES = [
+  { hindu: ['Traditionally linked to Sun (Surya) worship in many regions'], christian: ['Sunday is the primary day of worship (Sabbath/Mass) for most denominations'], muslim: [] },
+  { hindu: ['Associated with Lord Shiva (Somvar vrat)', 'Also linked to Chandra (Moon) worship in some traditions'], christian: [], muslim: [] },
+  { hindu: ['Associated with Hanuman (Mangalvar)', 'Also linked to Goddess Durga/Kali in some regional traditions'], christian: [], muslim: [] },
+  { hindu: ['Associated with Lord Ganesha and Budh (Mercury) in various traditions'], christian: [], muslim: [] },
+  { hindu: ['Associated with Guru/Brihaspati, Lord Vishnu, and Sai Baba in many regions'], christian: [], muslim: [] },
+  { hindu: ['Associated with Goddess Lakshmi and Santoshi Ma in many regions'], christian: ['Friday holds special weekly significance in remembrance of the Crucifixion in some traditions'], muslim: [`Friday (Jumu'ah) is the most important day of congregational prayer in Islam`] },
+  { hindu: ['Associated with Shani (Saturn)', 'Also linked to Hanuman in some regions'], christian: ['Observed as the Sabbath by some denominations (e.g. Seventh-day Adventists)'], muslim: [] }
+];
+
+// Concrete weekday-vs-weekend visiting plan for a specific calendar date: traffic, what's open,
+// preferred transport, suggested start time and (once nearby data is loaded) suggested real places.
+function getDateVisitPlan(station, date, nearby) {
+  const dow = date.getDay(); // 0=Sun ... 6=Sat
+  const isWeekend = dow === 0 || dow === 6;
+  const isMonday = dow === 1;
+  const famous = station.Popularity_Category === 'Famous';
+
+  const traffic = isWeekend
+    ? (famous ? 'Heavy — expect slow, congested roads near the main viewpoints and markets from Saturday afternoon through Sunday evening' : 'Moderate — busier than weekdays but still generally manageable')
+    : 'Light — a calm day on the roads, the best time to visit popular spots without a crowd';
+
+  const startTime = isWeekend
+    ? (famous ? '6:00 AM – 6:30 AM, to beat both the crowds and the weekend traffic' : '7:00 AM – 7:30 AM, a little earlier than a weekday')
+    : '8:00 AM – 9:00 AM — no need to rush, roads and attractions stay quiet most of the day';
+
+  const transportMode = isWeekend
+    ? (famous ? 'Pre-book a cab/taxi in advance, or use shared local transport — parking near popular viewpoints fills up fast and self-driving in heavy weekend traffic adds stress' : 'A private cab or self-drive both work, just start a little earlier than usual')
+    : 'Self-drive or an on-the-spot local taxi both work comfortably — traffic is light enough that timing is flexible';
+
+  const openNote = isWeekend
+    ? 'Nearly everything is open, including local markets, food stalls and viewpoints — these tend to be quieter on weekdays' + (dow === 0 ? '. Note: some banks and government offices are closed on Sunday' : '')
+    : 'Most attractions, parks and viewpoints are open as usual' + (isMonday ? '; a few government-run museums are commonly closed on Mondays — check ahead before planning around one' : '');
+
+  let suggestedPlaces = [];
+  if (nearby) {
+    const pool = [...(nearby.attractions || [])];
+    suggestedPlaces = isWeekend
+      ? pool.filter(p => p.tags.tourism === 'viewpoint' || p.tags.tourism === 'attraction').slice(0, 4)
+      : pool.slice(0, 4);
+    if (suggestedPlaces.length === 0) suggestedPlaces = pool.slice(0, 4);
+  }
+
+  return { isWeekend, dayLabel: isWeekend ? 'Weekend' : 'Weekday', traffic, startTime, transportMode, openNote, suggestedPlaces, famous };
+}
+
+function calendarHTML(station) {
+  return `
+    <p class="report-lead">Pick a date to see general weekly religious observances (Hindu, Christian, Muslim traditions), a full weekday-vs-weekend visiting plan (traffic, transport mode, best start time, suggested places), and real nearby temples, churches and mosques for ${station.HillStation_Name}.</p>
+    <input type="date" class="cal-date-input" id="calendarDateInput" onchange="onCalendarDateChange()">
+    <div id="calendarResult"></div>
+  `;
+}
+
+function onCalendarDateChange() {
+  const val = document.getElementById('calendarDateInput').value;
+  if (!val) return;
+  calendarSelectedDate = val;
+  renderCalendarResult();
+}
+
+function calendarPlanHTML(plan, station, audioElId) {
+  audioElId = audioElId || 'calendarAudioText';
+  const cls = plan.isWeekend ? 'cal-plan-weekend' : 'cal-plan-weekday';
+  const placesHTML = plan.suggestedPlaces.length
+    ? plan.suggestedPlaces.map(p => `<div class="field-row"><div class="field-label">${p.name}</div><div class="field-value">${p.distKm.toFixed(1)} km</div></div>`).join('')
+    : `<div class="field-row"><div class="field-value" style="color:#9aa79e;">Loading nearby places…</div></div>`;
+  return `
+    <div class="cal-plan-card ${cls}">
+      <span class="cal-plan-badge">${plan.isWeekend ? '🚗 Weekend Visiting Plan' : '🚗 Weekday Visiting Plan'}</span>
+      <div class="cal-plan-grid">
+        <div class="cal-plan-item"><div class="l">Traffic</div><div class="v">${plan.traffic}</div></div>
+        <div class="cal-plan-item"><div class="l">Best Start Time</div><div class="v">${plan.startTime}</div></div>
+        <div class="cal-plan-item"><div class="l">Preferred Transport</div><div class="v">${plan.transportMode}</div></div>
+        <div class="cal-plan-item"><div class="l">What's Open</div><div class="v">${plan.openNote}</div></div>
+      </div>
+    </div>
+    <h3 class="report-subhead">Suggested Places for This Day</h3>
+    <div class="field-table">${placesHTML}</div>
+    <div class="guide-audio-row">
+      <button class="guide-audio-btn" onclick="playAudioFor('${audioElId}')">▶ Play Audio Plan</button>
+      <button class="guide-audio-btn" style="background:#C1666B;" onclick="stopAudio()">⏹ Stop</button>
+    </div>
+  `;
+}
+
+function calendarAudioScript(plan, station, dayName) {
+  let s = `Visiting plan for ${station.HillStation_Name} on ${dayName}. This is a ${plan.dayLabel.toLowerCase()}. `;
+  s += `Traffic: ${plan.traffic}. `;
+  s += `The best time to start your day is around ${plan.startTime}. `;
+  s += `For getting around, ${plan.transportMode}. `;
+  s += `On places being open: ${plan.openNote}. `;
+  if (plan.suggestedPlaces.length) {
+    s += `Some good places to visit today include ${plan.suggestedPlaces.map(p => p.name).join(', ')}. `;
+  }
+  s += `Plan accordingly and have a great visit.`;
+  return s;
+}
+
+function renderCalendarResult() {
+  const resultDiv = document.getElementById('calendarResult');
+  if (!resultDiv || !calendarSelectedDate) return;
+  const station = allStations.find(s => s.HillStation_ID === currentReportStationId);
+  const d = new Date(calendarSelectedDate + 'T00:00:00');
+  const dayName = d.toLocaleDateString('en-US', { weekday: 'long' });
+  const notes = WEEKLY_RELIGIOUS_NOTES[d.getDay()];
+  const plan = getDateVisitPlan(station, d, calendarNearby);
+
+  let html = `<h3 class="report-subhead">${dayName}, ${d.toLocaleDateString('en-US', { year:'numeric', month:'long', day:'numeric' })}</h3>`;
+  html += calendarPlanHTML(plan, station, 'calendarAudioText');
+  notes.hindu.forEach(n => html += `<div class="cal-note-card cal-note-hindu">🕉️ Hindu tradition: ${n}</div>`);
+  notes.christian.forEach(n => html += `<div class="cal-note-card cal-note-christian">✝️ Christian tradition: ${n}</div>`);
+  notes.muslim.forEach(n => html += `<div class="cal-note-card cal-note-muslim">☪️ Muslim tradition: ${n}</div>`);
+  html += `<p class="report-note">These are general weekly patterns observed across many communities — not an exact regional festival calendar, which varies by location and lunar dates.</p>`;
+
+  if (!calendarNearby) {
+    html += `<p>Loading nearby temples, churches and mosques...</p>`;
+  } else {
+    html += `<h3 class="report-subhead">🕉️ Temples Nearby</h3><div class="field-table">${poiListHTML(calendarNearby.worshipHindu)}</div>`;
+    html += `<h3 class="report-subhead">✝️ Churches Nearby</h3><div class="field-table">${poiListHTML(calendarNearby.worshipChristian)}</div>`;
+    html += `<h3 class="report-subhead">☪️ Mosques Nearby</h3><div class="field-table">${poiListHTML(calendarNearby.worshipMuslim)}</div>`;
+  }
+  html += `<div id="calendarAudioText" style="display:none;">${calendarAudioScript(plan, station, dayName)}</div>`;
+  resultDiv.innerHTML = html;
+}
+
+// ===================== Animated (moving) process flow — shared by Specialty + Tea/Coffee/Chocolate =====================
+function drawSpecialtyProcess(steps, targetId, moverIcon) {
+  const el = document.getElementById(targetId);
+  if (!el || !steps || !steps.length) return;
+  const n = steps.length;
+  const duration = 7;
+  const cards = steps.map((s, i) => `
+    <div class="process-step-card" style="animation-delay:${-(duration * (i / n)).toFixed(2)}s;">
+      <div class="psc-num">${i + 1}</div>
+      <div class="psc-text">${s}</div>
+    </div>`).join('');
+  el.innerHTML = `
+    <div class="process-track-wrap">
+      <div class="process-track-line"></div>
+      <div class="process-mover">${moverIcon || '🌿'}</div>
+    </div>
+    <div class="process-steps-row">${cards}</div>
+  `;
+}
+
+function openSpecialtyVideoSearch(topic) {
+  const q = encodeURIComponent(topic + ' process');
+  window.open(`https://www.youtube.com/results?search_query=${q}`, '_blank', 'noopener');
+}
+
+// ===================== Local Specialty / Souvenir profiles (now its own left-sidebar page) =====================
+// Named overrides for well-known hill stations, plus region-based generic profiles, plus an
+// absolute fallback — so this page is never empty for any station in the database.
+const SPECIALTY_OVERRIDES = [
+  { match: /ooty|udhagamandalam/i, category: 'biscuit', icon: '🍃',
+    headline: 'Ooty is famous for Varkey — the crisp, buttery Nilgiri biscuit sold in bakeries all along the main road.',
+    signature: [
+      { name: 'Varkey (Nilgiri biscuits)', note: 'Thin, flaky, butter-heavy biscuits baked fresh daily — the single most bought souvenir from Ooty.' },
+      { name: 'Nilgiri tea', note: 'Grown on the surrounding slopes, brisk and aromatic, best from gardens above 1,800m.' },
+      { name: 'Homemade chocolate', note: 'Small-batch fudge-style chocolate sold alongside the biscuits in most bakeries.' }
+    ],
+    altitudeNote: 'Nilgiri tea gardens around Ooty sit mostly between 1,800m and 2,500m; the higher gardens (above 2,200m) are prized for a brisker, more fragrant cup, picked mainly in the cooler months.',
+    processTitle: 'How Nilgiri Tea Is Made',
+    process: ['Hand-plucking two leaves and a bud from the bush', 'Withering the leaves to soften them', 'Rolling to break the cell walls and release oils', 'Oxidising (fermenting) to develop colour and aroma', 'Firing/drying to lock in flavour', 'Sorting and grading before packing'],
+    gifts: ['Varkey biscuits (boxed)', 'Loose-leaf Nilgiri tea', 'Homemade chocolate fudge', 'Eucalyptus oil', 'Handmade candles from local craft stalls'],
+    produce: { fruits: ['Strawberries', 'Plums', 'Pears'], vegetables: ['Carrots', 'Cabbage', 'Fresh garlic'] } },
+
+  { match: /kodaikanal/i, category: 'chocolate', icon: '🍫',
+    headline: 'Kodaikanal is known for its homemade chocolate — small family-run shops along Bazaar Road turn out fudgy, hand-cut bars.',
+    signature: [
+      { name: 'Homemade chocolate', note: 'Dense, less-processed fudge-style chocolate, often plain, nutty, or filled with dried fruit.' },
+      { name: 'Kodai plums & pears', note: 'Grown on the surrounding slopes and sold fresh or as jam.' },
+      { name: 'Eucalyptus oil', note: 'Distilled locally from the eucalyptus groves around the lake.' }
+    ],
+    altitudeNote: 'The cocoa itself is not grown locally (cocoa needs tropical lowland heat) — it is sourced from South Indian cocoa belts and finished into chocolate here, where the cool climate above 2,000m helps the chocolate set firm without refrigeration.',
+    processTitle: 'How Kodaikanal Homemade Chocolate Is Made',
+    process: ['Melting cocoa mass/couverture gently in small batches', 'Mixing in milk solids, sugar and nuts or dried fruit by hand', 'Tempering the chocolate for a firm, glossy set', 'Pouring into trays or moulds', 'Cooling in the naturally cold hill air', 'Hand-cutting and wrapping'],
+    gifts: ['Homemade chocolate bars', 'Plum or pear jam', 'Eucalyptus oil', 'Dried lavender sachets'],
+    produce: { fruits: ['Plums', 'Pears', 'Passion fruit'], vegetables: ['Carrots', 'Beans', 'Garlic'] } },
+
+  { match: /darjeeling/i, category: 'tea', icon: '🍃',
+    headline: 'Darjeeling is world-famous for its tea — often called the "Champagne of Teas".',
+    signature: [
+      { name: 'First-flush Darjeeling tea', note: 'Light, floral spring pluck with the signature muscatel note.' },
+      { name: 'Second-flush Darjeeling tea', note: 'Fuller-bodied summer pluck, fruitier and more robust.' }
+    ],
+    altitudeNote: 'The most prized Darjeeling gardens sit between 2,000m and 2,300m; tea grown at this altitude develops the delicate muscatel character the region is known for, especially in the first-flush spring pluck.',
+    processTitle: 'How Darjeeling Tea Is Made',
+    process: ['Hand-plucking the finest two leaves and a bud', 'Withering over 12-16 hours to reduce moisture', 'Rolling to shape the leaf and release enzymes', 'Oxidising lightly for the signature muscatel note', 'Firing to stop oxidation and dry the leaf', 'Sorting into grades before packing'],
+    gifts: ['First-flush Darjeeling tea', 'Second-flush Darjeeling tea', 'Handwoven Nepali/Tibetan shawls', 'Local cardamom'],
+    produce: { fruits: ['Darjeeling oranges', 'Guava'], vegetables: ['Large cardamom', 'Squash', 'Broad beans'] } },
+
+  { match: /munnar/i, category: 'tea', icon: '🍃',
+    headline: 'Munnar is a major South Indian tea belt, with plantations covering the surrounding Kannan Devan hills.',
+    signature: [
+      { name: 'Munnar tea', note: 'Strong, malty CTC and orthodox teas grown across the estate hills.' },
+      { name: 'Cardamom & spices', note: 'Grown in the surrounding Idukki hills.' }
+    ],
+    altitudeNote: "Munnar's tea gardens sit around 1,600m to 2,000m; the higher estates produce a stronger, more full-bodied cup than lowland tea.",
+    processTitle: 'How Munnar Tea Is Made',
+    process: ['Hand or machine plucking of leaves', 'Withering to soften the leaf', 'CTC (crush-tear-curl) or orthodox rolling', 'Oxidising for colour and strength', 'Drying/firing', 'Grading and packing'],
+    gifts: ['Munnar CTC/orthodox tea', 'Cardamom and spice boxes', 'Homemade chocolate', 'Eucalyptus/tea-tree oil'],
+    produce: { fruits: ['Oranges', 'Passion fruit'], vegetables: ['Cardamom', 'Pepper', 'Carrots'] } },
+
+  { match: /coorg|madikeri|kodagu/i, category: 'coffee', icon: '🫘',
+    headline: "Coorg (Kodagu) is Karnataka's coffee country, shade-grown under areca and pepper vines.",
+    signature: [
+      { name: 'Coorg coffee', note: 'Arabica and Robusta grown under natural shade, often with pepper vines climbing the same trees.' },
+      { name: 'Homemade fruit wine', note: 'Local wines made from orange, coffee cherry and other fruit.' }
+    ],
+    altitudeNote: "Coorg's coffee estates sit mostly at 900m to 1,500m; the shade-grown Arabica from the higher estates is milder and more aromatic than sun-grown lowland coffee.",
+    processTitle: 'How Coorg Coffee Is Made',
+    process: ['Hand-picking ripe coffee cherries', 'Pulping to remove the outer skin', 'Fermenting and washing (or sun-drying for a natural process)', 'Drying the beans on raised beds', 'Hulling to remove the parchment layer', 'Roasting and grinding before packing'],
+    gifts: ['Coorg filter coffee (beans/powder)', 'Homemade orange wine', 'Black pepper', 'Honey'],
+    produce: { fruits: ['Oranges', 'Bananas'], vegetables: ['Pepper vines', 'Areca nut'] } }
+];
+
+const GENERIC_SPECIALTY_BY_REGION = [
+  { match: /himalaya/i, category: 'tea', icon: '🍃',
+    headline: 'Like much of the Himalayan belt, this station sits close to tea gardens and fruit orchards.',
+    altitudeNote: 'Gardens and orchards in this part of the Himalayas typically sit between 1,500m and 2,200m, where cooler days slow growth and concentrate flavour.',
+    processTitle: 'How Hill Tea Is Made',
+    process: ['Hand-plucking two leaves and a bud', 'Withering to soften the leaf', 'Rolling to release natural oils', 'Oxidising for colour and aroma', 'Firing/drying', 'Sorting and grading'],
+    gifts: ['Local loose-leaf tea', 'Apple or apricot preserves', 'Handwoven woollens', 'Local honey'],
+    produce: { fruits: ['Apples', 'Apricots', 'Walnuts'], vegetables: ['Potatoes', 'Peas', 'Cabbage'] } },
+
+  { match: /western ghats/i, category: 'spice', icon: '🌶️',
+    headline: 'This Western Ghats hill station sits in spice- and coffee-growing country.',
+    altitudeNote: 'Estates through this stretch of the Western Ghats generally lie between 1,000m and 1,800m, cool enough for good spice and coffee flavour development.',
+    processTitle: 'How Local Spice/Coffee Is Made',
+    process: ['Hand-picking ripe pods/cherries', 'Drying or fermenting', 'Hulling or grinding', 'Sorting by hand', 'Packing fresh for sale'],
+    gifts: ['Local spice boxes (pepper, cardamom)', 'Filter coffee', 'Homemade banana chips', 'Honey'],
+    produce: { fruits: ['Bananas', 'Jackfruit', 'Oranges'], vegetables: ['Pepper', 'Areca nut', 'Ginger'] } },
+
+  { match: /eastern ghats/i, category: 'spice', icon: '🌶️',
+    headline: 'This Eastern Ghats station is known for its forest produce and small-plantation crops.',
+    altitudeNote: 'Plantations here typically sit between 800m and 1,400m, enough elevation for a distinct, less humid growing season than the plains below.',
+    processTitle: 'How Local Produce Is Processed',
+    process: ['Hand-harvesting the crop', 'Sun-drying or fermenting as needed', 'Cleaning and sorting', 'Simple local processing (grinding/pressing)', 'Packing for local sale'],
+    gifts: ['Forest honey', 'Turmeric and spice mixes', 'Handwoven tribal crafts', 'Millet-based snacks'],
+    produce: { fruits: ['Mangoes', 'Custard apple'], vegetables: ['Turmeric', 'Millets', 'Leafy greens'] } },
+
+  { match: /north\s?east/i, category: 'tea', icon: '🍃',
+    headline: 'This Northeast hill station sits in tea- and orchid-growing country.',
+    altitudeNote: 'Gardens across this part of the Northeast hills usually sit between 1,200m and 2,000m, giving a brisk, distinctive character to the local tea.',
+    processTitle: 'How Local Tea Is Made',
+    process: ['Hand-plucking leaves', 'Withering', 'Rolling', 'Oxidising', 'Firing/drying', 'Sorting and grading'],
+    gifts: ['Local orthodox tea', 'Bamboo/cane handicrafts', 'Local handwoven textiles', 'Local dried chillies'],
+    produce: { fruits: ['Oranges', 'Kiwi', 'Passion fruit'], vegetables: ['Bamboo shoot', 'King chilli', 'Squash'] } },
+
+  { match: /aravalli/i, category: 'craft', icon: '🧵',
+    headline: 'This Aravalli hill town is better known for its crafts and produce than for a single plantation crop.',
+    altitudeNote: 'The Aravallis are a much older, lower range (mostly under 1,200m), so the region leans more on textiles, marble and forest produce than tea or coffee altitude bands.',
+    processTitle: 'How Local Handicrafts Are Made',
+    process: ['Sourcing local wood, marble or cloth', 'Hand-shaping or block-printing the piece', 'Dyeing or polishing', 'Finishing details by hand', 'Packing for sale'],
+    gifts: ['Block-printed textiles', 'Marble handicrafts', 'Local honey', 'Dried desert fruit snacks'],
+    produce: { fruits: ['Ber (Indian jujube)', 'Guava'], vegetables: ['Gram', 'Millets'] } }
+];
+
+function getSpecialtyProfile(station) {
+  const nameText = station.HillStation_Name || '';
+  for (const p of SPECIALTY_OVERRIDES) if (p.match.test(nameText)) return p;
+  const regionText = `${station.Region || ''} ${station.Mountain_Range || ''}`;
+  for (const p of GENERIC_SPECIALTY_BY_REGION) if (p.match.test(regionText)) return p;
+  // Absolute fallback so nothing is ever empty, even for stations that match no profile above.
+  return {
+    category: 'produce', icon: '🍓',
+    headline: `${station.HillStation_Name} doesn't have one single world-famous product, but like most hill towns it has its own small-batch local food and craft culture worth bringing home.`,
+    signature: [],
+    altitudeNote: `At around ${station.Elevation_M || 'a few thousand'}m, the cooler climate here favours the same kind of temperate fruit, vegetables and preserved foods common across India's hill stations.`,
+    processTitle: 'How Local Preserves Are Made',
+    process: ['Harvesting fruit or vegetables at peak season', 'Washing and cutting by hand', 'Cooking down with sugar or salt as a preservative', 'Bottling while hot', 'Labelling and selling locally'],
+    gifts: ['Local fruit jam or pickle', 'Local honey', 'Handwoven or knitted woollens', 'A packet of the local tea/coffee sold in town'],
+    produce: { fruits: ['Seasonal local fruit'], vegetables: ['Seasonal local vegetables'] }
+  };
+}
+
+function specialtyBlockHTML(station, prefix) {
+  const sp = getSpecialtyProfile(station);
+  const signatureHTML = sp.signature && sp.signature.length
+    ? `<div class="specialty-grid">${sp.signature.map((s, i) => `
+        <div class="specialty-card">
+          <div class="sc-photo" id="${prefix}Sig_${i}">🎁</div>
+          <div class="sc-name">${s.name}</div>
+          <div class="sc-note">${s.note || ''}</div>
+        </div>`).join('')}</div>`
+    : '';
+  const giftsHTML = `<div class="gift-grid">${sp.gifts.map((g, i) => `
+    <div class="gift-card">
+      <div class="gc-photo" id="${prefix}Gift_${i}">🎁</div>
+      <div class="gc-name">${g}</div>
+    </div>`).join('')}</div>`;
+  const fruitsHTML = `<div class="produce-chip-row">${sp.produce.fruits.map(f => `<span class="produce-chip">🍎 ${f}</span>`).join('')}</div>`;
+  const vegHTML = `<div class="produce-chip-row">${sp.produce.vegetables.map(v => `<span class="produce-chip">🥕 ${v}</span>`).join('')}</div>`;
+  return `
+    <p class="report-lead">${sp.headline}</p>
+    ${signatureHTML ? `<h3 class="report-subhead">What ${station.HillStation_Name} Is Known For</h3>${signatureHTML}` : ''}
+    <h3 class="report-subhead">Altitude & Growing Notes</h3>
+    <p class="report-lead">${sp.altitudeNote}</p>
+    <h3 class="report-subhead">${sp.processTitle} <span class="report-tag">process illustration</span></h3>
+    <div id="${prefix}SpecialtyProcess" class="report-chart-box"></div>
+    <button class="video-btn" onclick="openSpecialtyVideoSearch('${sp.processTitle.replace(/'/g, '')}')">▶ Watch a Real Video of This Process</button>
+    <h3 class="report-subhead">🎁 Gifts to Bring Back for Friends & Family</h3>
+    ${giftsHTML}
+    <h3 class="report-subhead">🍎 Local Fruits</h3>
+    ${fruitsHTML}
+    <h3 class="report-subhead">🥕 Local Vegetables</h3>
+    ${vegHTML}
+  `;
+}
+
+function specialtyBlockDraw(station, prefix) {
+  const sp = getSpecialtyProfile(station);
+  drawSpecialtyProcess(sp.process, `${prefix}SpecialtyProcess`, sp.icon);
+}
+
+function specialtyBlockLoadImages(station, prefix) {
+  const sp = getSpecialtyProfile(station);
+  (sp.signature || []).forEach((s, i) => {
+    fetchWikiImageChain([s.name, station.HillStation_Name]).then(result => {
+      const box = document.getElementById(`${prefix}Sig_${i}`);
+      if (!box) return;
+      if (result) box.innerHTML = `<img src="${result.url}" alt="${s.name}">`;
+    });
+  });
+  (sp.gifts || []).forEach((g, i) => {
+    fetchWikiImageChain([g]).then(result => {
+      const box = document.getElementById(`${prefix}Gift_${i}`);
+      if (!box) return;
+      if (result) box.innerHTML = `<img src="${result.url}" alt="${g}">`;
+    });
+  });
+}
+
+// ===================== Tea / Coffee / Chocolate Guides (dedicated left-sidebar pages) =====================
+// Real Indian hill regions where each is famous, with altitude bands (name & flavour genuinely
+// change with elevation), a moving process illustration, and a real "watch on YouTube" link.
+const TEA_PROFILES = [
+  { name: 'Darjeeling Tea', region: 'Darjeeling, West Bengal (Himalaya)', img: 'Darjeeling tea garden',
+    bands: [
+      { range: '600–1,200m', label: 'Lower gardens — malty, fuller-bodied second-flush character' },
+      { range: '1,200–2,000m', label: 'Mid gardens — balanced, classic Darjeeling cup' },
+      { range: '2,000–2,300m+', label: 'High gardens — delicate first-flush "muscatel" note, most prized' }
+    ],
+    process: ['Hand-plucking two leaves and a bud', 'Withering over 12–16 hours', 'Rolling to release enzymes', 'Light oxidation for the muscatel note', 'Firing to stop oxidation', 'Sorting into grades'] },
+  { name: 'Nilgiri Tea', region: 'Ooty / Coonoor, Tamil Nadu (Western Ghats)', img: 'Nilgiri tea garden Ooty',
+    bands: [
+      { range: '1,000–1,800m', label: 'Lower slopes — brisk, everyday CTC tea' },
+      { range: '1,800–2,500m', label: 'High gardens — bright, aromatic, more delicate orthodox tea' }
+    ],
+    process: ['Hand-plucking leaves', 'Withering to soften them', 'Rolling to break cell walls', 'Oxidising for colour and aroma', 'Firing/drying', 'Sorting and grading'] },
+  { name: 'Munnar Tea', region: 'Munnar, Kerala (Western Ghats)', img: 'Munnar tea plantation',
+    bands: [
+      { range: '1,000–1,600m', label: 'Lower estates — strong, malty CTC tea' },
+      { range: '1,600–2,000m+', label: 'High estates — smoother, more full-bodied orthodox tea' }
+    ],
+    process: ['Plucking (hand or machine)', 'Withering', 'CTC or orthodox rolling', 'Oxidising for strength', 'Drying/firing', 'Grading and packing'] },
+  { name: 'Assam-style Northeast Tea', region: 'Sikkim / Arunachal / Northeast hills', img: 'Sikkim tea garden',
+    bands: [
+      { range: '300–1,200m', label: 'Valley gardens — bold, malty Assam-style tea' },
+      { range: '1,200–2,000m', label: 'Hill gardens (e.g. Temi, Sikkim) — lighter, more delicate character' }
+    ],
+    process: ['Hand-plucking leaves', 'Withering', 'Rolling', 'Full oxidation for a bold cup', 'Firing/drying', 'Sorting and grading'] }
+];
+
+const COFFEE_PROFILES = [
+  { name: 'Coorg (Kodagu) Coffee', region: 'Coorg, Karnataka (Western Ghats)', img: 'Coorg coffee estate',
+    bands: [
+      { range: '900–1,200m', label: 'Lower estates — bolder, more robust cup, often blended Robusta' },
+      { range: '1,200–1,500m+', label: 'Higher shade-grown estates — milder, more aromatic Arabica' }
+    ],
+    process: ['Hand-picking ripe cherries', 'Pulping the outer skin', 'Fermenting and washing (or natural sun-drying)', 'Drying beans on raised beds', 'Hulling the parchment layer', 'Roasting and grinding'] },
+  { name: 'Chikmagalur Coffee', region: 'Chikmagalur, Karnataka (Western Ghats)', img: 'Chikmagalur coffee plantation',
+    bands: [
+      { range: '900–1,300m', label: 'Estate floor — full-bodied, classic South Indian filter coffee base' },
+      { range: '1,300–1,700m+', label: 'Higher slopes — brighter acidity, more delicate Arabica notes' }
+    ],
+    process: ['Hand-picking ripe cherries', 'Pulping', 'Fermenting/washing', 'Sun-drying on raised beds', 'Hulling', 'Roasting and grinding'] },
+  { name: 'Wayanad Coffee', region: 'Wayanad, Kerala (Western Ghats)', img: 'Wayanad coffee plantation',
+    bands: [
+      { range: '700–1,000m', label: 'Lower plantations — mostly Robusta, strong and earthy' },
+      { range: '1,000–1,200m+', label: 'Higher plantations — smoother, more aromatic cup' }
+    ],
+    process: ['Hand-picking cherries', 'Pulping', 'Fermenting and washing', 'Drying', 'Hulling', 'Roasting'] },
+  { name: 'Araku Valley Coffee', region: 'Araku Valley, Andhra Pradesh (Eastern Ghats)', img: 'Araku Valley coffee',
+    bands: [
+      { range: '900–1,300m+', label: 'Tribal-grown, shade Arabica — mild, low-acid, naturally organic character' }
+    ],
+    process: ['Hand-picking cherries by tribal farmers', 'Pulping', 'Natural sun-drying', 'Hulling', 'Grading', 'Roasting and grinding'] }
+];
+
+const CHOCOLATE_PROFILES = [
+  { name: 'Kodaikanal Homemade Chocolate', region: 'Kodaikanal, Tamil Nadu (Western Ghats)', img: 'Kodaikanal homemade chocolate',
+    bands: [
+      { range: 'Cocoa grown: 0–300m (Kerala/TN lowlands)', label: 'Warm lowland cocoa belt supplies the raw cocoa' },
+      { range: 'Finished at: 2,000m+ (Kodaikanal)', label: 'Cool hill air helps the chocolate temper and set firm without refrigeration' }
+    ],
+    process: ['Melting cocoa mass/couverture in small batches', 'Mixing in milk solids, sugar, nuts or dried fruit', 'Tempering for a firm, glossy set', 'Pouring into trays or moulds', 'Cooling in the cold hill air', 'Hand-cutting and wrapping'] },
+  { name: 'Munnar Homemade Chocolate', region: 'Munnar, Kerala (Western Ghats)', img: 'Munnar homemade chocolate shop',
+    bands: [
+      { range: 'Cocoa grown: 0–400m (Kerala lowlands)', label: 'Sourced from nearby lowland cocoa farms' },
+      { range: 'Finished at: 1,600–2,000m (Munnar)', label: 'Cool estate-town climate suits small-batch tempering' }
+    ],
+    process: ['Melting cocoa mass gently', 'Blending with milk, sugar, spices or nuts', 'Tempering the chocolate', 'Moulding into bars', 'Cooling', 'Wrapping and selling locally'] },
+  { name: 'Coorg Cocoa & Chocolate', region: 'Coorg, Karnataka (Western Ghats)', img: 'Coorg cocoa chocolate',
+    bands: [
+      { range: '900–1,200m', label: 'Cocoa is inter-cropped with coffee under shade — a genuine local grow-and-finish chain' }
+    ],
+    process: ['Harvesting cocoa pods alongside coffee cherries', 'Fermenting the cocoa beans', 'Sun-drying', 'Roasting the beans', 'Grinding into cocoa mass', 'Tempering and moulding into bars'] },
+  { name: 'Ooty Homemade Chocolate & Fudge', region: 'Ooty, Tamil Nadu (Western Ghats)', img: 'Ooty homemade chocolate shop',
+    bands: [
+      { range: 'Cocoa grown: lowland TN/Kerala', label: 'Raw cocoa sourced from the plains' },
+      { range: 'Finished at: 1,800–2,500m (Ooty)', label: 'Nilgiri hill climate keeps fudge-style chocolate firm and fresh' }
+    ],
+    process: ['Melting cocoa mass with butter', 'Mixing in milk, sugar and nuts', 'Cooking down to a fudge-like consistency', 'Pouring into trays', 'Cooling in the hill air', 'Hand-cutting into bars'] }
+];
+
+function altitudeBandHTML(bands) {
+  const palette = ['#eef3e6', '#fdf1e0', '#f1eaf8', '#e6f2f0'];
+  const textPalette = ['#1B4D3E', '#b5730e', '#6b3fa0', '#1a7a6b'];
+  return `<div class="altitude-band-row">${bands.map((b, i) => `
+    <div class="altitude-band" style="background:${palette[i % palette.length]};color:${textPalette[i % textPalette.length]};">
+      <div class="ab-range">${b.range}</div>
+      <div class="ab-label">${b.label}</div>
+    </div>`).join('')}</div>`;
+}
+
+function brewGuideHTML(profiles, moverIcon, prefix) {
+  const intro = moverIcon === '🍃'
+    ? 'India\'s hill tea gardens sit at very different altitudes — and altitude is a big part of why a Darjeeling first-flush tastes nothing like a Munnar CTC. Higher, cooler gardens generally grow slower and give a lighter, more aromatic leaf; lower, warmer gardens give a bolder, stronger cup.'
+    : moverIcon === '🫘'
+      ? 'Coffee across India\'s Western and Eastern Ghats changes character with elevation too — higher shade-grown estates tend to give a milder, more aromatic Arabica cup, while lower estates lean bolder and more robust.'
+      : 'Hill-station chocolate in India is almost always a two-place story: the cocoa itself grows in warm lowlands, then gets melted, tempered and finished in the cool hill air of the town it\'s sold in — which is what gives it that firm, fudgy set.';
+  return `
+    <p class="report-lead">${intro}</p>
+    ${profiles.map((p, pi) => `
+      <div class="brew-card">
+        <div class="brew-card-top">
+          <div class="brew-photo" id="${prefix}Photo_${pi}">${moverIcon}</div>
+          <div class="brew-info">
+            <span class="brew-badge" style="background:#eef3e6;color:#1B4D3E;">${p.region}</span>
+            <h4>${p.name}</h4>
+            ${altitudeBandHTML(p.bands)}
+            <button class="video-btn" onclick="openSpecialtyVideoSearch('${p.name.replace(/'/g, '')} making')">▶ Watch a Real Video</button>
+          </div>
+        </div>
+        <h3 class="report-subhead">How It's Made</h3>
+        <div id="${prefix}Process_${pi}" class="report-chart-box"></div>
+      </div>
+    `).join('')}
+  `;
+}
+
+function brewGuideLoad(profiles, prefix) {
+  profiles.forEach((p, pi) => {
+    fetchWikiImageChain([p.img, p.name]).then(result => {
+      const box = document.getElementById(`${prefix}Photo_${pi}`);
+      if (box && result) box.innerHTML = `<img src="${result.url}" alt="${p.name}">`;
+    });
+    const icon = prefix === 'tea' ? '🍃' : (prefix === 'coffee' ? '🫘' : '🍫');
+    drawSpecialtyProcess(p.process, `${prefix}Process_${pi}`, icon);
+  });
+}
+
+function aboutHTML() {
+  return `<p class="report-lead">Hillora is a data warehousing &amp; mining project bringing together tourism, biodiversity, community, threat, and preservation data for India's hill stations — built to help explore, understand, and preserve these living landscapes.</p>`;
+}
+
+function handleSearchInput() {
+  const q = document.getElementById('searchInput').value.trim().toLowerCase();
+  const resultsDiv = document.getElementById('searchResults');
+  if (!q) { resultsDiv.style.display = 'none'; resultsDiv.innerHTML = ''; return; }
+  const matches = allStations.filter(s => s.HillStation_Name.toLowerCase().includes(q)).slice(0, 8);
+  if (matches.length === 0) {
+    resultsDiv.innerHTML = '<div class="search-result-item" style="color:#9aa79e;">No matching station found.</div>';
+  } else {
+    resultsDiv.innerHTML = matches.map(s => `<div class="search-result-item" onclick="selectSearchResult('${s.HillStation_ID}')">${s.HillStation_Name} <span style="color:#9aa79e;font-size:0.85rem;">— ${s.State_UT}</span></div>`).join('');
+  }
+  resultsDiv.style.display = 'block';
+}
+function selectSearchResult(id) {
+  showAtlas();
+  selectStation(id);
+  document.getElementById('searchInput').value = '';
+  document.getElementById('searchResults').style.display = 'none';
+}
+
+function toggleNotifications() {
+  const panel = document.getElementById('notifPanel');
+  if (panel.style.display === 'block') { panel.style.display = 'none'; return; }
+  panel.innerHTML = `
+    <div class="notif-item"><b>New biodiversity photos added</b><br>Animal, medicinal plant &amp; flower images now shown for every station.</div>
+    <div class="notif-item"><b>Tea, Coffee & Chocolate guides added</b><br>Check the sidebar for altitude-based flavour guides with photos and process animations.</div>
+    <div class="notif-item"><b>Local Specialty moved to its own page</b><br>Find it in the sidebar, now with photos for every gift idea.</div>
+  `;
+  panel.style.display = 'block';
+}
+
+function downloadReportPDF() {
+  const el = document.getElementById('reportPDFArea');
+  const nameSafe = document.getElementById('reportTitle').textContent.replace(/[^a-z0-9]+/gi, '-');
+  const opt = {
+    margin: 10,
+    filename: `Hillora-${nameSafe}.pdf`,
+    image: { type: 'jpeg', quality: 0.95 },
+    html2canvas: { scale: 2, useCORS: true },
+    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+  };
+  html2pdf().set(opt).from(el).save();
+}
+
+document.addEventListener('click', function (e) {
+  const searchWrap = document.getElementById('searchWrap');
+  if (searchWrap && !searchWrap.contains(e.target)) { document.getElementById('searchResults').style.display = 'none'; }
+  const bellWrap = document.getElementById('bellWrap');
+  if (bellWrap && !bellWrap.contains(e.target)) { document.getElementById('notifPanel').style.display = 'none'; }
+});
+
+loadData();
+setupPhoto360Drag();
+</script>
+</body>
+</html>
